@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "lithium-backend"
+version = "0.0.1"
+description = ""
+authors = ["phillychi3 <phillychi3@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = {extras = ["standard"], version = "^0.115.5"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
