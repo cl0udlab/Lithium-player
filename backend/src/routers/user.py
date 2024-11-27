@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="/user", tags=["user"])
 
 @router.post("/register")
 async def register_user(

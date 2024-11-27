@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 
-router = APIRouter(prefix="/files", tags=["files"])
+router = APIRouter(prefix="/file", tags=["file"])
 
 @router.post("/upload")
 async def upload_file(
