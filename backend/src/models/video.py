@@ -9,6 +9,16 @@ class VideoCodec(str, Enum):
     H265 = "h265"
     VP9 = "vp9"
     AV1 = "av1"
+    Unknown = "unknown"
+
+class VideoFormat(str, Enum):
+    MP4 = "mp4"
+    MKV = "mkv"
+    WEBM = "webm"
+    AVI = "avi"
+    FLV = "flv"
+    MOV = "mov"
+    WMV = "wmv"
 
 
 class Video(BaseModel, table=True):
@@ -17,6 +27,7 @@ class Video(BaseModel, table=True):
     duration: int
     file_size: int
     codec: VideoCodec
+    format: VideoFormat
     width: int
     height: int
     frame_rate: float
@@ -32,26 +43,17 @@ class Video(BaseModel, table=True):
     series: Optional["AnimeSeries"] = Relationship(back_populates="episodes")
 
 
-class AnimeGenre(str, Enum):
-    ACTION = "action"
-    COMEDY = "comedy"
-    DRAMA = "drama"
-    FANTASY = "fantasy"
-    SCIFI = "sci-fi"
-    SLICE_OF_LIFE = "slice-of-life"
-
-
 class AnimeSeries(BaseModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str = Field(index=True)
     original_title: Optional[str] = Field(default=None)
     release_year: int
-    genre: List[AnimeGenre] = Field(default_factory=list)
     author: Optional[str] = Field(default=None)
     studio: Optional[str] = Field(default=None)
     description: Optional[str] = Field(default=None)
     season_number: Optional[int] = Field(default=None)
     total_episodes: Optional[int] = Field(default=None)
     cover_image: Optional[bytes] = Field(default=None)
+    tags: Optional[List[str]] = Field(default_factory=list)
 
     episodes: List[Video] = Relationship(back_populates="series")

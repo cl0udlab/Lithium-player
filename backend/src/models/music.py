@@ -12,6 +12,7 @@ class AudioCodec(str, Enum):
     AAC = "aac"
     OGG = "ogg"
     OPUS = "opus"
+    WAV = "wav"
 
 
 class MusicTrack(BaseModel, table=True):
@@ -27,7 +28,7 @@ class MusicTrack(BaseModel, table=True):
     # 演出者資訊
     artist: str = Field(index=True)
     album_artist: Optional[str] = Field(default=None, index=True)
-    album: str = Field(index=True)
+    album: Optional[str] = Field(default=None)
     release_year: Optional[int] = Field(default=None)
     publisher: Optional[str] = Field(default=None)
     composer: Optional[str] = Field(default=None)
