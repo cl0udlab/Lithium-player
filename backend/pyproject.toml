@@ -8,6 +8,8 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 fastapi = {extras = ["standard"], version = "^0.115.5"}
+pydantic = "^2.10.2"
+sqlmodel = "^0.0.22"
 
 
 [build-system]
