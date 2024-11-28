@@ -13,6 +13,8 @@ pydantic = "^2.10.2"
 sqlmodel = "^0.0.22"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 passlib = "^1.7.4"
+av = "^13.1.0"
+tinytag = "^2.0.0"
 
 
 [build-system]
