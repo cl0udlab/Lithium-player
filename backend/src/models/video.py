@@ -1,7 +1,7 @@
 from typing import Optional
 from sqlmodel import Field, Relationship, ARRAY, Column, String
 from enum import Enum
-from .common import BaseModel
+from .common import BaseModel, BasicFileModel
 
 
 class VideoCodec(str, Enum):
@@ -60,17 +60,22 @@ class AnimeTag(BaseModel, table=True):
     )
 
 
-class Video(BaseModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    title: str = Field(index=True)
-    duration: int
+class VideoFile(BasicFileModel, table=True):
     file_size: int
     codec: VideoCodec
     format: VideoFormat
     width: int
     height: int
     frame_rate: float
+    video_id: int = Field(foreign_key="video.id")
+    Video = Relationship(back_populates="file")
 
+
+class Video(BaseModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str = Field(index=True)
+    duration: int
+    file: Optional[VideoFile] = Relationship(back_populates="video")
     description: Optional[str] = Field(default=None)
     subtitles: list[str] = Field(sa_column=Column(ARRAY(String)))
     audio_tracks: list[str] = Field(sa_column=Column(ARRAY(String)))

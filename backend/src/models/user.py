@@ -38,6 +38,6 @@ class PlayHistory(BaseModel, table=True):
     track_id: Optional[int] = Field(foreign_key="musictrack.id", default=None)
     video_id: Optional[int] = Field(foreign_key="video.id", default=None)
     played_at: datetime = Field(default_factory=datetime.now)
-    musictrack: Optional["MusicTrack"] = Relationship(back_populates="play_history")
-    video: Optional["Video"] = Relationship(back_populates="play_history")
+    musictrack: Optional["MusicTrack"] = Relationship(back_populates="play_history",sa_relationship_kwargs={"lazy": "joined"})
+    video: Optional["Video"] = Relationship(back_populates="play_history",sa_relationship_args={"lazy": "joined"})
     user: "User" = Relationship(back_populates="play_history")

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from sqlmodel import Field, Relationship
 from enum import Enum
-from .common import BaseModel
+from .common import BaseModel, BasicFileModel
 from .user import User
 
 
@@ -19,11 +19,7 @@ class MusicTrack(BaseModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str = Field(index=True)
     duration: int
-    codec: AudioCodec
-    bitrate: int
-    sample_rate: int
-    file_size: int
-    audio_type: str
+    file: Optional["MusicTrackFile"] = Relationship(back_populates="track")
 
     # 演出者資訊
     artist: str = Field(index=True)
@@ -51,6 +47,17 @@ class MusicTrack(BaseModel, table=True):
     album_ref: Optional["Album"] = Relationship(
         back_populates="tracks",
     )
+
+
+class MusicTrackFile(BasicFileModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    track_id: int = Field(foreign_key="musictrack.id")
+    codec: AudioCodec
+    bitrate: int
+    sample_rate: int
+    file_size: int
+    audio_type: str
+    track: MusicTrack = Relationship(back_populates="file")
 
 
 class Album(BaseModel, table=True):
