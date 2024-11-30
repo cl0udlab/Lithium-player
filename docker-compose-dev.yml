@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: lithium-db
+    environment:
+      POSTGRES_DB: lithium
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - lithium-network
+
+volumes:
+  postgres_data:
+
+networks:
+  lithium-network:
+    driver: bridge

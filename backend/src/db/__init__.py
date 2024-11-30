@@ -1,1 +1,1 @@
-from lithium_db import engine,SQLModel,get_db
+from .lithium_db import engine,SQLModel,get_db

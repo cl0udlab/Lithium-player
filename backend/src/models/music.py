@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 from sqlmodel import Field, Relationship
 from enum import Enum
 from .common import BaseModel
@@ -44,7 +44,13 @@ class MusicTrack(BaseModel, table=True):
     disc_number: Optional[int] = Field(default=None)
     comment: Optional[str] = Field(default=None)
 
-    album_ref: Optional["Album"] = Relationship(back_populates="tracks")
+    album_id: Optional[int] = Field(
+        default=None,
+        foreign_key="album.id",
+    )
+    album_ref: Optional["Album"] = Relationship(
+        back_populates="tracks",
+    )
 
 
 class Album(BaseModel, table=True):
@@ -59,7 +65,9 @@ class Album(BaseModel, table=True):
     total_discs: Optional[int] = Field(default=None)
     description: Optional[str] = Field(default=None)
 
-    tracks: List[MusicTrack] = Relationship(back_populates="album_ref")
+    tracks: list["MusicTrack"] = Relationship(
+        back_populates="album_ref",
+    )
 
 
 class Playlist(BaseModel, table=True):
@@ -69,7 +77,7 @@ class Playlist(BaseModel, table=True):
     description: Optional[str] = Field(default=None)
 
     user: User = Relationship(back_populates="playlists")
-    tracks: List["PlaylistTrack"] = Relationship(back_populates="playlist")
+    tracks: list["PlaylistTrack"] = Relationship(back_populates="playlist")
 
 
 class PlaylistTrack(BaseModel, table=True):
@@ -77,4 +85,4 @@ class PlaylistTrack(BaseModel, table=True):
     playlist_id: int = Field(foreign_key="playlist.id")
     track_id: int = Field(foreign_key="musictrack.id")
     position: int
-    added_at: datetime = Field(default_factory=datetime.utcnow)
+    added_at: datetime = Field(default_factory=datetime.now)
