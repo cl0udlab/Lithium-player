@@ -31,7 +31,7 @@ def create_resolutions(width: int, height: int) -> List[Tuple[int, int]]:
     return resolutions
 
 
-def create_hls(videopath: Path, output_dir: Path):
+def create_hls(videopath: Path, output_dir: Path) -> Path:
     """將影片轉換為 HLS 格式"""
     video = av.open(str(videopath))
     width, height, duration = get_video_info(video)
@@ -91,6 +91,7 @@ def create_hls(videopath: Path, output_dir: Path):
         f.write(master_playlist)
 
     video.close()
+    return output_dir / "master.m3u8"
 
 
 if __name__ == "__main__":
