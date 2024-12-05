@@ -16,6 +16,7 @@ passlib = "^1.7.4"
 av = "^13.1.0"
 tinytag = "^2.0.0"
 psycopg2 = "^2.9.10"
+requests = "^2.32.3"
 
 
 [build-system]

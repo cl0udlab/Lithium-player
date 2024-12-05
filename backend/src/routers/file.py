@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Optional
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy import literal
 from models.music import MusicTrack, Album
@@ -6,6 +6,8 @@ from models.video import Video
 from sqlmodel import Session, select, or_
 from sqlalchemy.orm import selectinload
 from db import get_db
+from core.syncfile import scan_one_file, scan_dir_file
+from pathlib import Path
 
 router = APIRouter(prefix="/file", tags=["file"])
 
@@ -50,6 +52,22 @@ async def get_video_file(video_id: int, session: SessionDep):
     if not music:
         raise HTTPException(status_code=404, detail=f"id:{video_id} video not found")
     return music
+
+
+@router.post("/parse_file")
+async def parse_one_file(file_path: str):
+    """解析1個檔案"""
+    scan_one_file(Path(file_path))
+
+
+@router.post("/scanall")
+async def scan_all_files(dir_path: Optional[str] = None):
+    """掃描所有檔案"""
+    if dir_path:
+        scan_dir_file(Path(dir_path))
+    else:
+        dir = Path("/data")  # TODO: 待改從資料庫抓
+        scan_dir_file(dir)
 
 
 @router.get("/search")
