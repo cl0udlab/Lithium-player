@@ -3,7 +3,7 @@ from typing import Optional
 from sqlmodel import Field, Relationship
 from enum import Enum
 from .common import BaseModel, BasicFileModel
-from .user import User
+from .user import User, PlayHistory
 
 
 class AudioCodec(str, Enum):
@@ -47,6 +47,10 @@ class MusicTrack(BaseModel, table=True):
     album_ref: Optional["Album"] = Relationship(
         back_populates="tracks",
     )
+    play_history: list["PlayHistory"] = Relationship(
+        back_populates="musictrack",
+    )
+    playlists: list["PlaylistTrack"] = Relationship(back_populates="track")
 
 
 class MusicTrackFile(BasicFileModel, table=True):
@@ -93,3 +97,5 @@ class PlaylistTrack(BaseModel, table=True):
     track_id: int = Field(foreign_key="musictrack.id")
     position: int
     added_at: datetime = Field(default_factory=datetime.now)
+    playlist: "Playlist" = Relationship(back_populates="tracks")
+    track: "MusicTrack" = Relationship(back_populates="playlists")

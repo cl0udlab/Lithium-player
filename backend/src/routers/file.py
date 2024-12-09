@@ -9,20 +9,20 @@ from db import get_db
 from core.syncfile import scan_one_file, scan_dir_file
 from pathlib import Path
 
-router = APIRouter(prefix="/file", tags=["file"])
+file_router = APIRouter(prefix="/file", tags=["file"])
 
 # TODO: 之後再加入驗證middleware
 
 SessionDep = Annotated[Session, Depends(get_db)]
 
 
-@router.post("/upload")
+@file_router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     """上傳檔案並提取metadata"""
     ...
 
 
-@router.get("/music/{track_id}", response_model=MusicTrack)
+@file_router.get("/music/{track_id}", response_model=MusicTrack)
 async def get_music_file(track_id: int, session: SessionDep):
     """獲取音樂檔案資訊"""
     statement = (
@@ -36,7 +36,7 @@ async def get_music_file(track_id: int, session: SessionDep):
     return music
 
 
-@router.get("/video/{video_id}")
+@file_router.get("/video/{video_id}")
 async def get_video_file(video_id: int, session: SessionDep):
     """獲取影片檔案資訊"""
     statement = (
@@ -54,13 +54,13 @@ async def get_video_file(video_id: int, session: SessionDep):
     return music
 
 
-@router.post("/parse_file")
+@file_router.post("/parse_file")
 async def parse_one_file(file_path: str):
     """解析1個檔案"""
     scan_one_file(Path(file_path))
 
 
-@router.post("/scanall")
+@file_router.post("/scanall")
 async def scan_all_files(dir_path: Optional[str] = None):
     """掃描所有檔案"""
     if dir_path:
@@ -70,7 +70,7 @@ async def scan_all_files(dir_path: Optional[str] = None):
         scan_dir_file(dir)
 
 
-@router.get("/search")
+@file_router.get("/search")
 async def search_files(name: str, session: SessionDep):
     """搜尋"""
     videos = select(
@@ -109,7 +109,7 @@ async def search_files(name: str, session: SessionDep):
     ]
 
 
-@router.delete("/{file_id}")
+@file_router.delete("/{file_id}")
 async def delete_file(file_id: int):
     """刪除檔案"""
     ...

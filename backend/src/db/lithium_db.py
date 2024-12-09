@@ -4,8 +4,14 @@ from typing import Generator
 
 postgres_url = "postgresql://postgres:postgres@localhost:5432/lithium"
 
-engine = create_engine(postgres_url, echo=True)  # Debug mode enabled
+engine = create_engine(postgres_url, echo=True)
 
-def get_db() -> Generator[Session]:
+
+def get_db() -> Generator[Session, None, None]:
+    """獲取資料庫連線
+    """
     with Session(engine) as session:
-        yield session
+        try:
+            yield session
+        finally:
+            session.close()

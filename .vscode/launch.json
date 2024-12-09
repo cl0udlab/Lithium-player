@@ -12,7 +12,9 @@
             "cwd": "${workspaceFolder}/backend/src",
             "args": [
                 "main:app",
-                "--reload"
+                "--reload",
+                "--port",
+                "8000"
             ],
             "jinja": false
         }

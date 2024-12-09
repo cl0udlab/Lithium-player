@@ -1,6 +1,8 @@
 from typing import Optional
 from sqlmodel import Field, Relationship, ARRAY, Column, String
 from enum import Enum
+
+from .user import PlayHistory
 from .common import BaseModel, BasicFileModel
 
 
@@ -61,6 +63,7 @@ class AnimeTag(BaseModel, table=True):
 
 
 class VideoFile(BasicFileModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
     file_size: int
     codec: VideoCodec
     format: VideoFormat
@@ -68,7 +71,7 @@ class VideoFile(BasicFileModel, table=True):
     height: int
     frame_rate: float
     video_id: int = Field(foreign_key="video.id")
-    Video = Relationship(back_populates="file")
+    video: "Video" = Relationship(back_populates="file")
 
 
 class Video(BaseModel, table=True):
@@ -87,6 +90,9 @@ class Video(BaseModel, table=True):
     series: Optional["AnimeSeries"] = Relationship(back_populates="episodes")
     tags: list[VideoTag] = Relationship(
         back_populates="videos", link_model=VideoTagsLink
+    )
+    play_history: list["PlayHistory"] = Relationship(
+        back_populates="video",
     )
 
 

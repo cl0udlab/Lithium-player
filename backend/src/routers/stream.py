@@ -9,12 +9,12 @@ from models.video import Video
 from core.makehls import create_hls
 import os
 
-router = APIRouter(prefix="/stream", tags=["stream"])
+stream_router = APIRouter(prefix="/stream", tags=["stream"])
 
 SessionDep = Annotated[Session, Depends(get_db)]
 
 
-@router.get("/music/{track_id}")
+@stream_router.get("/music/{track_id}")
 async def stream_music(
     track_id: int,
     session: SessionDep,
@@ -37,7 +37,7 @@ async def stream_music(
     return StreamingResponse(file_iterator(), media_type=f"audio/{music.file.codec}")
 
 
-@router.get("/video/{video_id}")
+@stream_router.get("/video/{video_id}")
 async def stream_video(
     video_id: int,
     session: SessionDep,
@@ -70,7 +70,7 @@ async def stream_video(
     )
 
 
-@router.get("/video/{video_id}/subtitle/{language}")
+@stream_router.get("/video/{video_id}/subtitle/{language}")
 async def get_subtitle(
     video_id: int,
     language: str,
@@ -79,7 +79,7 @@ async def get_subtitle(
     ...
 
 
-@router.get("/music/{track_id}/lyrics")
+@stream_router.get("/music/{track_id}/lyrics")
 async def get_lyrics(
     track_id: int,
 ):

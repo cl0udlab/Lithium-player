@@ -12,3 +12,4 @@ package-lock.json
 __pycache__/
 *.py[cod]
 *$py.class
+backend/src/data

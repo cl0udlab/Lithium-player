@@ -9,4 +9,4 @@ from .auth import (
     create_refresh_token,
     decode_token,
 )
-from .modal import Token, TokenPayload, LoginRequest
+from .modal import Token, TokenPayload, LoginRequest, RegisterRequest
