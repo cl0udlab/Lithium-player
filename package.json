@@ -1,0 +1,13 @@
+{
+  "name": "lithium-player",
+  "private": true,
+  "workspaces": [
+    "frontend/*"
+  ],
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "dev:desktop": "pnpm --filter desktop electron-dev",
+    "build:web": "pnpm --filter web build",
+    "build:desktop": "pnpm --filter desktop electron-build"
+  }
+}

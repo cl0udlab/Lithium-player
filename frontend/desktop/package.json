@@ -1,5 +1,5 @@
 {
-	"name": "my-app",
+	"name": "@lithium-player/web",
 	"version": "0.0.1",
 	"scripts": {
 		"dev": "vite dev",
