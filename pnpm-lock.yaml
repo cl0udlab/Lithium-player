@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      lucide-svelte:
-        specifier: ^0.468.0
-        version: 0.468.0(svelte@5.9.0)
     devDependencies:
       daisyui:
         specifier: ^4.12.20
@@ -72,6 +68,10 @@ importers:
         version: 5.4.11(@types/node@22.10.1)
 
   frontend/web:
+    dependencies:
+      lucide-svelte:
+        specifier: ^0.468.0
+        version: 0.468.0(svelte@5.9.0)
     devDependencies:
       '@eslint/compat':
         specifier: ^1.2.3

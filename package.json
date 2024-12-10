@@ -12,8 +12,5 @@
   },
   "devDependencies": {
     "daisyui": "^4.12.20"
-  },
-  "dependencies": {
-    "lucide-svelte": "^0.468.0"
   }
 }

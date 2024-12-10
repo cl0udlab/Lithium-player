@@ -1,8 +1,12 @@
 <script lang="ts">
-  import Navbar from "$lib/components/navbar.svelte"
-  import Sidebar from "$lib/components/sidebar.svelte"
+	import Navbar from '$lib/components/navbar.svelte';
+	import Sidebar from '$lib/components/sidebar.svelte';
+	let isExpanded = $state(true);
+
+	function handleToggle(expanded: boolean) {
+		isExpanded = expanded;
+	}
 </script>
 
-<Navbar />
-<Sidebar />
-
+<Navbar onToggle={handleToggle} />
+<Sidebar {isExpanded} />
