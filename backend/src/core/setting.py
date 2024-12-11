@@ -2,7 +2,9 @@ from pydantic import BaseModel
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
+import json
 
+SETTTING_PATH = Path("data") / "setting.json"
 
 class StorageType(StrEnum):
     MUSIC = "music"
@@ -21,9 +23,7 @@ class Storage(BaseModel):
 
 
 class Setting(BaseModel):
-    storages: list[Storage] = [
-        Storage(type=StorageType.FILE, path=Path("Nothing")),
-    ]
+    storages: list[Storage] = []
     scan_interval: int = 3600
     log_level: str = "info"
 
@@ -36,3 +36,7 @@ class Setting(BaseModel):
         data = super().model_dump(**kwargs)
         data["storages"] = [storage.model_dump(**kwargs) for storage in self.storages]
         return data
+
+def load_setting() -> Setting:
+    with open(SETTTING_PATH) as f:
+        return Setting.model_validate_json(json.load(f))

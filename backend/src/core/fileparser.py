@@ -42,6 +42,8 @@ class FileParser:
         base_info = {
             "filename": file_path.name,
             "file_size": file_stat.st_size,
+            "file_path": str(file_path),
+            "file_type": file_type,
             "created_at": datetime.fromtimestamp(file_stat.st_ctime),
             "updated_at": datetime.fromtimestamp(file_stat.st_mtime),
         }

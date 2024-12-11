@@ -6,8 +6,9 @@ from models.video import Video
 from sqlmodel import Session, select, or_
 from sqlalchemy.orm import selectinload
 from db import get_db
-from core.syncfile import scan_one_file, scan_dir_file
+from core.syncfile import sync_one_file, sync_dir_file
 from pathlib import Path
+from core.setting import load_setting
 
 file_router = APIRouter(prefix="/file", tags=["file"])
 
@@ -57,17 +58,19 @@ async def get_video_file(video_id: int, session: SessionDep):
 @file_router.post("/parse_file")
 async def parse_one_file(file_path: str):
     """解析1個檔案"""
-    scan_one_file(Path(file_path))
+    data = sync_one_file(Path(file_path))
+    print(data)
+    return data
 
 
 @file_router.post("/scanall")
 async def scan_all_files(dir_path: Optional[str] = None):
     """掃描所有檔案"""
     if dir_path:
-        scan_dir_file(Path(dir_path))
+        sync_dir_file(Path(dir_path))
     else:
-        dir = Path("/data")  # TODO: 待改從資料庫抓
-        scan_dir_file(dir)
+        for dir in load_setting().storages:
+            sync_dir_file(dir.path)
 
 
 @file_router.get("/search")
