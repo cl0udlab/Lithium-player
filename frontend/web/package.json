@@ -33,6 +33,6 @@
 	},
 	"dependencies": {
 		"lucide-svelte": "^0.468.0",
-    "@lithium/shared": "workspace:*"
+		"vidstack": "^1.12.12"
 	}
 }
