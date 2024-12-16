@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import HTTPException, status, Depends
@@ -29,8 +28,7 @@ def get_password_hash(password: str) -> str:
 
 def get_user_from_db(userid: str) -> User:
     """get user by id"""
-    with get_db() as db:
-        user = db.exec(select(User).where(User.id == userid)).first()
+    user = get_db().exec(select(User).where(User.id == userid)).first()
     return user
 
 
