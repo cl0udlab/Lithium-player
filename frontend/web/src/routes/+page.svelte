@@ -1,19 +1,7 @@
 <script lang="ts">
-	import Navbar from '$lib/components/navbar.svelte';
-	import Sidebar from '$lib/components/sidebar.svelte';
-	import { stars } from '$lib/init/store';
 	import { onMount } from 'svelte';
-
-	let isExpanded = $state(true);
-
+	import { goto } from '$app/navigation';
 	onMount(() => {
-		stars.initialize();
+		goto('/app');
 	});
-
-	function handleToggle(expanded: boolean) {
-		isExpanded = expanded;
-	}
 </script>
-
-<Navbar onToggle={handleToggle} />
-<Sidebar {isExpanded} />
