@@ -1,5 +1,6 @@
-from typing import Annotated, Optional
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from typing import Annotated, Optional, Union
+from fastapi import APIRouter, Query, UploadFile, File, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy import literal
 from models.music import MusicTrack, Album
 from models.video import Video
@@ -9,6 +10,9 @@ from db import get_db
 from core.syncfile import sync_one_file, sync_dir_file
 from pathlib import Path
 from core.setting import load_setting
+from PIL import Image
+import io
+
 
 file_router = APIRouter(prefix="/file", tags=["file"])
 
@@ -23,36 +27,75 @@ async def upload_file(file: UploadFile = File(...)):
     ...
 
 
-@file_router.get("/music/{track_id}", response_model=MusicTrack)
-async def get_music_file(track_id: int, session: SessionDep):
-    """獲取音樂檔案資訊"""
-    statement = (
-        select(MusicTrack)
-        .where(MusicTrack.id == track_id)
-        .options(selectinload(MusicTrack.file), selectinload(MusicTrack.album_ref))
-    )
-    music = session.exec(statement).first()
-    if not music:
-        raise HTTPException(status_code=404, detail=f"id:{track_id} music not found")
-    return music
+@file_router.get("/image")
+async def get_image_file(
+    image_id=Query(..., description="圖片 ID"),
+    image_size: Optional[int] = Query(200, description="圖片大小"),
+):
+    """獲取圖片檔案"""
+    image_path = Path(f"data/images/{image_id}")
+    if not image_path.exists():
+        raise HTTPException(status_code=404, detail="image not exists")
+    image = Image.open(image_path)
+    image.thumbnail((image_size, image_size))
+    image_io = io.BytesIO()
+    image.save(image_io, format="JPEG")
+    image_io.seek(0)
+    return StreamingResponse(image_io, media_type="image/jpeg")
 
 
-@file_router.get("/video/{video_id}")
-async def get_video_file(video_id: int, session: SessionDep):
-    """獲取影片檔案資訊"""
-    statement = (
-        select(Video)
-        .where(Video.id == video_id)
-        .options(
-            selectinload(Video.file),
-            selectinload(Video.series),
-            selectinload(Video.tags),
+@file_router.get("/music", response_model=Union[MusicTrack, list[MusicTrack]])
+async def get_music_file(
+    session: SessionDep, track_id: Optional[int] = Query(None, description="音樂 ID")
+):
+    """獲取音樂檔案"""
+    if track_id is not None:
+        statement = (
+            select(MusicTrack)
+            .where(MusicTrack.id == track_id)
+            .options(selectinload(MusicTrack.file), selectinload(MusicTrack.album_ref))
         )
+        music = session.exec(statement).first()
+        if not music:
+            raise HTTPException(
+                status_code=404, detail=f"id:{track_id} music not found"
+            )
+        return music
+
+    statement = select(MusicTrack).options(
+        selectinload(MusicTrack.file), selectinload(MusicTrack.album_ref)
     )
-    music = session.exec(statement).first()
-    if not music:
-        raise HTTPException(status_code=404, detail=f"id:{video_id} video not found")
-    return music
+    return session.exec(statement).all()
+
+
+@file_router.get("/video", response_model=Union[Video, list[Video]])
+async def get_video_file(
+    session: SessionDep, video_id: Optional[int] = Query(None, description="影片 ID")
+):
+    """獲取影片檔案"""
+    if video_id is not None:
+        statement = (
+            select(Video)
+            .where(Video.id == video_id)
+            .options(
+                selectinload(Video.file),
+                selectinload(Video.series),
+                selectinload(Video.tags),
+            )
+        )
+        video = session.exec(statement).first()
+        if not video:
+            raise HTTPException(
+                status_code=404, detail=f"id:{video_id} video not found"
+            )
+        return video
+
+    statement = select(Video).options(
+        selectinload(Video.file),
+        selectinload(Video.series),
+        selectinload(Video.tags),
+    )
+    return session.exec(statement).all()
 
 
 @file_router.post("/parse_file")

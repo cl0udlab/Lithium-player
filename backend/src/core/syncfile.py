@@ -19,6 +19,7 @@ def sync_music_file(metadata: dict, db: Session):
         "genre": metadata.get("genre"),
         "track_number": metadata.get("track_number"),
         "disc_number": metadata.get("disc_number"),
+        "cover_art": metadata.get("cover_art"),
     }
     track = MusicTrack(**musicdata)
 

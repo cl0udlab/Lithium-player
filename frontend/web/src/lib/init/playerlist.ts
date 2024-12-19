@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import type { Playlist } from './types';
+import type { Playlist } from '$lib/types';
 
 function createStarsStore() {
 	const { subscribe, set, update } = writable<Playlist[]>([]);

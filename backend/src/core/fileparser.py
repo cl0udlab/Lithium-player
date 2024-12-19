@@ -4,6 +4,7 @@ from typing import Dict, Union
 from tinytag import TinyTag
 import av
 from enum import Enum
+from uuid import uuid4
 
 
 class FileType(str, Enum):
@@ -16,6 +17,16 @@ class FileType(str, Enum):
 class FileParser:
     SUPPORT_MUSIC = {".mp3", ".flac", ".aac", ".ogg", ".opus", ".wav"}
     SUPPORT_VIDEO = {".mp4", ".mkv", ".webm", ".avi", ".flv", ".mov", ".wmv"}
+    IMAGES_DIR = Path("data/images")
+
+    @classmethod
+    def save_cover_art(cls, image_data: bytes) -> str:
+        cls.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+        image_id = str(uuid4())
+        image_path = cls.IMAGES_DIR / f"{image_id}.jpg"
+        with open(image_path, "wb") as f:
+            f.write(image_data)
+        return image_id + ".jpg"
 
     @staticmethod
     def get_file_type(file_path: Union[str, Path]) -> FileType:
@@ -58,7 +69,11 @@ class FileParser:
     @staticmethod
     def _parse_music(file_path: Path) -> Dict:
         try:
-            tag = TinyTag.get(file_path)
+            tag = TinyTag.get(file_path, image=True)
+            cover_art = tag.images.any
+            cover_art_id = None
+            if cover_art and cover_art.data:
+                cover_art_id = FileParser.save_cover_art(cover_art.data)
 
             return {
                 "title": tag.title or file_path.stem,
@@ -67,7 +82,7 @@ class FileParser:
                 "sample_rate": tag.samplerate or 0,
                 "artist": tag.artist,
                 "album": tag.album,
-                "album_artist": tag.albumartist,
+                "album_artist": tag.albumartist if tag.albumartist else tag.artist,
                 "composer": tag.composer,
                 "genre": tag.genre,
                 "year": tag.year,
@@ -75,6 +90,7 @@ class FileParser:
                 "disc_number": tag.disc,
                 "audio_type": "stereo" if (tag.channels or 0) > 1 else "mono",
                 "codec": FileParser._get_audio_codec(file_path.suffix),
+                "cover_art": cover_art_id,
             }
         except Exception as e:
             print(f"Error parsing music file: {e}")

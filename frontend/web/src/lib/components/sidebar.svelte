@@ -21,19 +21,28 @@
 	>
 		<div class="bg-base-100 h-full overflow-y-auto px-3 pb-4">
 			<div class="space-y-2 font-medium">
-				<a href="/" class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2">
+				<a href="/app" class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2">
 					<House />
 					<span class="ms-3">Overview</span>
 				</a>
-				<a href="/" class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2">
+				<a
+					href="/app/music"
+					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+				>
 					<Music />
 					<span class="ms-3">Music</span>
 				</a>
-				<a href="/" class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2">
+				<a
+					href="/app/video"
+					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+				>
 					<FileVideo />
 					<span class="ms-3">Video</span>
 				</a>
-				<a href="/" class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2">
+				<a
+					href="/app/file"
+					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+				>
 					<File />
 					<span class="ms-3">File</span>
 				</a>
@@ -49,16 +58,25 @@
 	>
 		<div class="bg-base-100 flex h-full flex-col items-center overflow-hidden px-3 pb-4">
 			<div class="space-y-2 font-medium">
-				<a href="/" class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2">
+				<a href="/app" class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2">
 					<House />
 				</a>
-				<a href="/" class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2">
+				<a
+					href="/app/music"
+					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+				>
 					<Music />
 				</a>
-				<a href="/" class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2">
+				<a
+					href="/app/video"
+					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+				>
 					<FileVideo />
 				</a>
-				<a href="/" class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2">
+				<a
+					href="/app/file"
+					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+				>
 					<File />
 				</a>
 			</div>

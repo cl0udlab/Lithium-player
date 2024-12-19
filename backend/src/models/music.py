@@ -32,7 +32,7 @@ class MusicTrack(BaseModel, table=True):
     genre: Optional[str] = Field(default=None)
 
     # 額外資訊
-    cover_art: Optional[bytes] = Field(default=None)
+    cover_art: Optional[str] = Field(default=None)
     lyrics: Optional[str] = Field(default=None)
     mood: Optional[str] = Field(default=None)
     bpm: Optional[int] = Field(default=None)
