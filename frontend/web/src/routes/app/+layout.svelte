@@ -31,11 +31,30 @@
 		$currentTrack = track;
 		$playerState.currentTrack = track;
 		playerisable = true;
-		if ($isPlaying) {
+
+		const explay = async () => {
 			if (player) {
 				player.src = `http://localhost:8000/stream/music/${track.id}`;
 			}
-			player?.play();
+			await new Promise((resolve, reject) => {
+				const onCanPlay = () => {
+					player?.removeEventListener('can-play', onCanPlay);
+					resolve(true);
+				};
+
+				const onError = (error: any) => {
+					player?.removeEventListener('error', onError);
+					reject(error);
+				};
+
+				player?.addEventListener('can-play', onCanPlay);
+				player?.addEventListener('error', onError);
+			});
+			await player?.play();
+		};
+
+		if ($isPlaying) {
+			explay();
 			return;
 		}
 		const initPlayer = async () => {
@@ -88,7 +107,9 @@
 		$playerState.isExpanded = !$playerState.isExpanded;
 		if ($playerState.isExpanded) {
 			goto('/app/play');
-		}
+		}else{
+      history.back();
+    }
 	}
 
 	setContext('playMusic', playMusic);
