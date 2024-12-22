@@ -13,6 +13,7 @@ export const load = (async ({ fetch }) => {
 		}
 
 		const musics = await response.json();
+    console.log(musics);
 		return {
 			musics,
 			error: null,

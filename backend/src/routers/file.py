@@ -1,4 +1,5 @@
-from typing import Annotated, Optional, Union
+from datetime import datetime
+from typing import Annotated, List, Optional, Union
 from fastapi import APIRouter, Query, UploadFile, File, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy import literal
@@ -12,6 +13,26 @@ from pathlib import Path
 from core.setting import load_setting
 from PIL import Image
 import io
+from pydantic import BaseModel
+
+
+class AlbumResponse(BaseModel):
+    id: Optional[int] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    deleted_at: Optional[datetime] = None
+    status: str = "ALIVE"
+    title: str
+    album_artist: Optional[str] = None
+    genre: Optional[str] = None
+    year: Optional[int] = None
+    cover_art: Optional[str] = None
+    description: Optional[str] = None
+    tracks: List[MusicTrack] = []
+
+    class Config:
+        from_attributes = True
+        orm_mode = True
 
 
 file_router = APIRouter(prefix="/file", tags=["file"])
@@ -42,6 +63,32 @@ async def get_image_file(
     image.save(image_io, format="JPEG")
     image_io.seek(0)
     return StreamingResponse(image_io, media_type="image/jpeg")
+
+
+@file_router.get("/album", response_model=Union[AlbumResponse, List[AlbumResponse]])
+async def get_albums(
+    session: SessionDep, album_id: Optional[int] = Query(None, description="專輯 ID")
+):
+    """獲取專輯檔案"""
+    if album_id is not None:
+        statement = (
+            select(Album)
+            .options(selectinload(Album.tracks))
+            .where(Album.id == album_id)
+        )
+        album = session.exec(statement).first()
+
+        if not album:
+            raise HTTPException(
+                status_code=404, detail=f"id:{album_id} album not found"
+            )
+
+        return AlbumResponse.model_validate(album)
+
+    statement = select(Album).options(selectinload(Album.tracks))
+    albums = session.exec(statement).all()
+
+    return [AlbumResponse.model_validate(album) for album in albums]
 
 
 @file_router.get("/music", response_model=Union[MusicTrack, list[MusicTrack]])

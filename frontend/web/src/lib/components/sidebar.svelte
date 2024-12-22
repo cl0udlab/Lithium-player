@@ -25,13 +25,35 @@
 					<House />
 					<span class="ms-3">Overview</span>
 				</a>
-				<a
-					href="/app/music"
-					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
-				>
-					<Music />
-					<span class="ms-3">Music</span>
-				</a>
+				<div class="collapse-arrow collapse">
+					<input type="checkbox" />
+					<div
+						class="collapse-title hover:bg-base-100 flex min-h-0 items-center rounded-lg px-2 py-1.5"
+					>
+						<Music />
+						<span class="ms-3">Music</span>
+					</div>
+					<div class="collapse-content px-0 py-0">
+						<ul class="space-y-0.5 ps-4">
+							<li>
+								<a
+									href="/app/music"
+									class="hover:bg-base-100 flex items-center rounded-lg px-2 py-1.5"
+								>
+									<span class="ms-3">音樂</span>
+								</a>
+							</li>
+							<li>
+								<a
+									href="/app/albums"
+									class="hover:bg-base-100 flex items-center rounded-lg px-2 py-1.5"
+								>
+									<span class="ms-3">專輯</span>
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>
 				<a
 					href="/app/video"
 					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
@@ -62,7 +84,7 @@
 					<House />
 				</a>
 				<a
-					href="/app/music"
+					href="/app/albums"
 					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
 				>
 					<Music />
