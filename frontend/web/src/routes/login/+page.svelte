@@ -1,0 +1,86 @@
+<script lang="ts">
+	import { goto } from '$app/navigation';
+	import type { PageData } from './$types';
+	import { Music } from 'lucide-svelte';
+
+	export let data: PageData;
+
+	let username = '';
+	let password = '';
+	let error = '';
+
+	async function handleSubmit() {
+		if (!username || !password) {
+			error = '請填寫所有欄位';
+			return;
+		}
+
+		if (username === 'admin' && password === 'admin') {
+			await goto('/app');
+		} else {
+			error = '帳號或密碼錯誤';
+		}
+	}
+</script>
+
+<div class="bg-base-200 flex min-h-screen items-center justify-center p-4">
+	<div class="card bg-base-100 hover:shadow-3xl w-96 shadow-2xl transition-shadow duration-300">
+		<div class="card-body p-8">
+			<div class="mb-8 flex flex-col items-center">
+				<div class="bg-primary text-primary-content mb-4 rounded-full p-4">
+					<Music size={32} />
+				</div>
+				<h2 class="card-title text-3xl font-bold">Lithium Player</h2>
+				<p class="text-base-content/60 mt-2">歡迎回來，請登入您的帳號</p>
+			</div>
+
+			{#if error}
+				<div role="alert" class="alert alert-error">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-6 w-6 shrink-0 stroke-current"
+						fill="none"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+						/>
+					</svg>
+					<span>{error}</span>
+				</div>
+			{/if}
+
+			<form on:submit|preventDefault={handleSubmit} class="form-control gap-4">
+				<div class="form-control">
+					<label class="label" for="username">
+						<span class="label-text font-medium">用戶名</span>
+					</label>
+					<input
+						id="username"
+						type="text"
+						bind:value={username}
+						placeholder="請輸入用戶名"
+						class="input input-bordered focus:input-primary w-full transition-colors"
+					/>
+				</div>
+
+				<div class="form-control">
+					<label class="label" for="password">
+						<span class="label-text font-medium">密碼</span>
+					</label>
+					<input
+						type="password"
+						bind:value={password}
+						placeholder="請輸入密碼"
+						class="input input-bordered focus:input-primary w-full transition-colors"
+					/>
+				</div>
+
+				<button type="submit" class="btn btn-primary mt-6 w-full"> 登入 </button>
+			</form>
+		</div>
+	</div>
+</div>

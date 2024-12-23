@@ -19,6 +19,9 @@ psycopg2 = "^2.9.10"
 requests = "^2.32.3"
 bcrypt = "^4.2.1"
 pillow = "^11.0.0"
+ebooklib = "^0.18"
+mobi-python = "^0.0.1"
+colorlog = "^6.9.0"
 
 
 [build-system]

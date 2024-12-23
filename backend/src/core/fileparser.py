@@ -5,18 +5,23 @@ from tinytag import TinyTag
 import av
 from enum import Enum
 from uuid import uuid4
+from ebooklib import epub
+from mobi import Mobi
 
 
 class FileType(str, Enum):
     MUSIC = "music"
     VIDEO = "video"
-    DOCUMENT = "document"
+    TEXT = "text"
+    IMAGE = "image"
     UNKNOWN = "unknown"
 
 
 class FileParser:
     SUPPORT_MUSIC = {".mp3", ".flac", ".aac", ".ogg", ".opus", ".wav"}
     SUPPORT_VIDEO = {".mp4", ".mkv", ".webm", ".avi", ".flv", ".mov", ".wmv"}
+    SUPPORT_TEXT = {".txt", ".pdf", ".epub", ".mobi"}
+    SUPPORT_IMAGE = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
     IMAGES_DIR = Path("data/images")
 
     @classmethod
@@ -37,6 +42,8 @@ class FileParser:
             return FileType.MUSIC
         elif extension in FileParser.SUPPORT_VIDEO:
             return FileType.VIDEO
+        elif extension in FileParser.SUPPORT_TEXT:
+            return FileType.TEXT
         else:
             raise ValueError(f"Unsupported file type: {extension}")
 
@@ -63,8 +70,34 @@ class FileParser:
             return {**base_info, **FileParser._parse_music(file_path)}
         elif file_type == FileType.VIDEO:
             return {**base_info, **FileParser._parse_video(file_path)}
+        elif file_type == FileType.TEXT:
+            return {**base_info, **FileParser._parse_text(file_path)}
         else:
             return base_info
+
+    @staticmethod
+    def _parse_text(file_path: Path) -> Dict:
+        try:
+            if file_path.suffix == ".epub":
+                book = epub.read_epub(file_path)
+                metadata = book.get_metadata()
+                return {
+                    "pages": len(book.get_items_of_type("page")),
+                    "author": metadata.get("author"),
+                    "publisher": metadata.get("publisher"),
+                }
+            elif file_path.suffix == ".mobi":
+                book = Mobi(file_path)
+                return {
+                    "pages": book.get_pages(),
+                    "author": book.get_author(),
+                    "publisher": book.get_publisher(),
+                }
+            else:
+                return {}
+        except Exception as e:
+            print(f"Error parsing text file: {e}")
+            return {}
 
     @staticmethod
     def _parse_music(file_path: Path) -> Dict:

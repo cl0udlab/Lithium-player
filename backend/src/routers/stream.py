@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 from db import get_db
 from models.music import MusicTrack
 from models.video import Video
+from models.file import FileModal
 from core.makehls import create_hls
 import os
 import re
@@ -126,6 +127,21 @@ async def stream_video(
         media_type="application/vnd.apple.mpegurl",
         filename=f"{video.title}.m3u8",
     )
+
+
+@stream_router.get("/file/{file_id}")
+async def get_file(
+    file_id: int,
+    session: SessionDep,
+):
+    """獲取檔案"""
+    file = session.exec(select(FileModal).where(FileModal.id == file_id)).first()
+    if not file:
+        raise HTTPException(status_code=404, detail="找不到檔案")
+    file_path = Path(file.filepath)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="檔案不存在")
+    return FileResponse(file_path)
 
 
 @stream_router.get("/video/{video_id}/subtitle/{language}")

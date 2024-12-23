@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, create_engine, Session
+from sqlmodel import SQLModel, create_engine, Session  # noqa: F401
 import models  # noqa: F401 # for creating tables
 from typing import Generator
 

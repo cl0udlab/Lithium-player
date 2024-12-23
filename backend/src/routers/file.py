@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import Annotated, List, Optional, Union
-from fastapi import APIRouter, Query, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, Query, UploadFile, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy import literal
 from models.music import MusicTrack, Album
 from models.video import Video
+from models.file import FileModal
 from sqlmodel import Session, select, or_
 from sqlalchemy.orm import selectinload
 from db import get_db
@@ -40,12 +41,6 @@ file_router = APIRouter(prefix="/file", tags=["file"])
 # TODO: 之後再加入驗證middleware
 
 SessionDep = Annotated[Session, Depends(get_db)]
-
-
-@file_router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
-    """上傳檔案並提取metadata"""
-    ...
 
 
 @file_router.get("/image")
@@ -142,6 +137,22 @@ async def get_video_file(
         selectinload(Video.series),
         selectinload(Video.tags),
     )
+    return session.exec(statement).all()
+
+
+@file_router.get("/file", response_model=Union[FileModal, List[FileModal]])
+async def get_file(
+    session: SessionDep, file_id: Optional[int] = Query(None, description="檔案 ID")
+):
+    """獲取檔案"""
+    if file_id is not None:
+        statement = select(FileModal).where(FileModal.id == file_id)
+        file = session.exec(statement).first()
+        if not file:
+            raise HTTPException(status_code=404, detail=f"id:{file_id} file not found")
+        return file
+
+    statement = select(FileModal)
     return session.exec(statement).all()
 
 

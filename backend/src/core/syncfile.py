@@ -3,7 +3,62 @@ import os
 from db import get_db
 from core.fileparser import FileParser, FileType
 from sqlmodel import Session, select, union
-from models import VideoFile, MusicTrackFile, Video, MusicTrack, Album
+from models import VideoFile, MusicTrackFile, Video, MusicTrack, Album, FileModal
+
+
+def sync_text_file(metadata: dict, db: Session):
+    """同步文字檔案到資料庫"""
+    filem = FileModal(
+        filename=metadata.get("filename"),
+        filepath=metadata.get("file_path"),
+        file_size=metadata.get("file_size"),
+        name=metadata.get("filename"),
+        file_format=metadata.get("file_format"),
+        size=metadata.get("file_size"),
+        pages=metadata.get("pages"),
+        author=metadata.get("author"),
+        publisher=metadata.get("publisher"),
+    )
+    try:
+        db.add(filem)
+        db.commit()
+        return filem
+    except Exception as e:
+        db.rollback()
+        raise Exception(f"Failed to sync text file: {str(e)}")
+
+
+def sync_video_file(metadata: dict, db: Session):
+    """同步影片檔案到資料庫"""
+    try:
+        video_file = VideoFile(
+            filename=metadata.get("filename"),
+            filepath=metadata.get("file_path"),
+            file_size=metadata.get("file_size", 0),
+            codec=metadata.get("codec", "unknown"),
+            format=metadata.get("format", "unknown"),
+            width=metadata.get("width", 0),
+            height=metadata.get("height", 0),
+            frame_rate=metadata.get("frame_rate", 0),
+        )
+
+        video = Video(
+            title=metadata.get("title"),
+            duration=metadata.get("duration", 0),
+            description=metadata.get("description"),
+            subtitles=metadata.get("subtitles", []),
+            audio_tracks=metadata.get("audio_tracks", []),
+            thumbnail=metadata.get("thumbnail"),
+            file=video_file,
+        )
+
+        db.add(video)
+        db.commit()
+        return video
+
+    except Exception as e:
+        db.rollback()
+        raise Exception(f"同步影片檔案失敗: {str(e)}")
 
 
 def sync_music_file(metadata: dict, db: Session):
@@ -24,7 +79,7 @@ def sync_music_file(metadata: dict, db: Session):
     track = MusicTrack(**musicdata)
 
     track_file = MusicTrackFile(
-        filename=Path(metadata.get("file_path")).name,
+        filename=metadata.get("filename"),
         filepath=metadata.get("file_path"),
         codec=metadata.get("codec", "unknown"),
         bitrate=metadata.get("bitrate", 0),
@@ -98,8 +153,7 @@ def sync_one_file(file_path: Path):
     if file.get("file_type") == FileType.MUSIC:
         sync_music_file(metadata=file, db=db)
     elif file.get("file_type") == FileType.VIDEO:
-        video = VideoFile(filepath=file_path)
-        video.video = Video(**file)
-        db.add(video)
-        db.commit()
+        sync_video_file(metadata=file, db=db)
+    elif file.get("file_type") == FileType.TEXT:
+        sync_text_file(metadata=file, db=db)
     return file

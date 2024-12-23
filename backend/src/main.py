@@ -8,6 +8,7 @@ from routers.authr import auth_router
 from routers.file import file_router
 from routers.stream import stream_router
 from routers.user import user_router
+from core.logger import logger
 
 SQLModel.metadata.create_all(engine)
 
@@ -39,3 +40,4 @@ app.include_router(auth_router)
 app.include_router(file_router)
 app.include_router(stream_router)
 app.include_router(user_router)
+logger.info("Server started")
