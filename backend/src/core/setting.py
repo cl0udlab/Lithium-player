@@ -6,6 +6,7 @@ import json
 
 SETTTING_PATH = Path("data") / "setting.json"
 
+
 class StorageType(StrEnum):
     MUSIC = "music"
     VIDEO = "video"
@@ -37,6 +38,10 @@ class Setting(BaseModel):
         data["storages"] = [storage.model_dump(**kwargs) for storage in self.storages]
         return data
 
+
 def load_setting() -> Setting:
-    with open(SETTTING_PATH) as f:
-        return Setting.model_validate_json(json.load(f))
+    try:
+        with open(SETTTING_PATH) as f:
+            return Setting.model_validate_json(json.load(f))
+    except FileNotFoundError:
+        return Setting()

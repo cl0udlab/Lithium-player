@@ -7,8 +7,6 @@ from db import get_db
 from models.music import MusicTrack
 from models.video import Video
 from models.file import FileModal
-from core.makehls import create_hls
-import os
 import re
 
 stream_router = APIRouter(prefix="/stream", tags=["stream"])
@@ -97,36 +95,81 @@ async def head_music(
 @stream_router.get("/video/{video_id}")
 async def stream_video(
     video_id: int,
+    request: Request,
     session: SessionDep,
 ):
     """串流影片檔案"""
-
     video = session.exec(select(Video).where(Video.id == video_id)).first()
     if not video or not video.file:
         raise HTTPException(status_code=404, detail="找不到影片檔案")
+
     file_path = Path(video.file.filepath)
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="影片檔案不存在")
-    file_size = os.path.getsize(file_path)
-    size_limit = 100 * 1024 * 1024
-    if file_size < size_limit:
 
-        async def file_iterator():
-            chunk_size = 1024 * 1024
-            with open(file_path, "rb") as file:
-                while chunk := file.read(chunk_size):
-                    yield chunk
+    file_size = file_path.stat().st_size
+    range_header = request.headers.get("Range")
 
-        return StreamingResponse(
-            file_iterator(), media_type=f"video/{video.file.format.lower()}"
-        )
+    if range_header:
+        range_match = re.match(r"bytes=(\d+)-(\d+)?", range_header)
+        if range_match:
+            start = int(range_match.group(1))
+            end = int(range_match.group(2)) if range_match.group(2) else file_size - 1
+        else:
+            start = 0
+            end = file_size - 1
+    else:
+        start = 0
+        end = file_size - 1
 
-    playlist_path = create_hls(video.file.filepath, Path("temp"))
-    return FileResponse(
-        playlist_path,
-        media_type="application/vnd.apple.mpegurl",
-        filename=f"{video.title}.m3u8",
+    async def file_iterator(start: int, end: int):
+        chunk_size = 1024 * 1024
+        with open(file_path, "rb") as file:
+            file.seek(start)
+            while start <= end:
+                bytes_to_read = min(chunk_size, end - start + 1)
+                data = file.read(bytes_to_read)
+                if not data:
+                    break
+                start += len(data)
+                yield data
+
+    headers = {
+        "Content-Range": f"bytes {start}-{end}/{file_size}",
+        "Accept-Ranges": "bytes",
+        "Content-Type": f"video/{video.file.format.lower()}",
+    }
+
+    return StreamingResponse(
+        file_iterator(start, end),
+        headers=headers,
+        status_code=206 if range_header else 200,
     )
+
+
+@stream_router.head("/video/{video_id}")
+async def head_video(
+    video_id: int,
+    session: SessionDep,
+):
+    """處理 HEAD 請求"""
+    video = session.exec(select(Video).where(Video.id == video_id)).first()
+    if not video or not video.file:
+        raise HTTPException(status_code=404, detail="找不到影片檔案")
+
+    file_path = Path(video.file.filepath)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="影片檔案不存在")
+
+    file_size = file_path.stat().st_size
+
+    headers = {
+        "Content-Length": str(file_size),
+        "Accept-Ranges": "bytes",
+        "Content-Type": f"video/{video.file.format.lower()}",
+    }
+
+    return Response(headers=headers)
 
 
 @stream_router.get("/file/{file_id}")

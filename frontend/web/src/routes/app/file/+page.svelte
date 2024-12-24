@@ -1,5 +1,66 @@
 <script lang="ts">
-    import type { PageData } from './$types';
+	export let data;
+	import { getContext } from 'svelte';
+	import { FileText, FileImage, FileMusic, FileVideo, File } from 'lucide-svelte';
 
-    let { data }: { data: PageData } = $props();
+	const { files, error, status } = data;
+
+	function getFileIcon(format: string) {
+		switch (format.toLowerCase()) {
+			case 'image':
+				return FileImage;
+			case 'audio':
+				return FileMusic;
+			case 'video':
+				return FileVideo;
+			case 'text':
+				return FileText;
+			default:
+				return File;
+		}
+	}
+
+	function formatFileSize(bytes: number) {
+		const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+		if (bytes === 0) return '0 Byte';
+		const i = Math.floor(Math.log(bytes) / Math.log(1024));
+		return Math.round(bytes / Math.pow(1024, i)) + ' ' + sizes[i];
+	}
 </script>
+
+{#if error}
+	<div class="text-error flex flex-col items-center justify-center p-8">
+		<h2 class="mb-4 text-2xl font-bold">載入失敗</h2>
+		<p class="text-lg">{error}</p>
+		{#if status === 500}
+			<button type="button" class="btn btn-error mt-4" onclick={() => window.location.reload()}>
+				重試
+			</button>
+		{/if}
+	</div>
+{:else}
+	<div class="grid grid-cols-1 gap-5 p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+		{#each files as file}
+			<div
+				class="bg-base-200 overflow-hidden rounded-lg shadow-lg transition-shadow hover:shadow-xl"
+			>
+				<div class="group relative flex items-center justify-center p-6">
+					<svelte:component this={getFileIcon(file.file_format)} size={64} class="text-gray-600" />
+				</div>
+				<div class="p-4">
+					<h3 class="truncate text-lg font-semibold">{file.name}</h3>
+					<p class="truncate text-sm text-gray-500">{formatFileSize(file.size)}</p>
+					{#if file.author}
+						<p class="truncate text-xs text-gray-400">作者: {file.author}</p>
+					{/if}
+					{#if file.publisher}
+						<p class="truncate text-xs text-gray-400">出版商: {file.publisher}</p>
+					{/if}
+					{#if file.pages}
+						<p class="truncate text-xs text-gray-400">頁數: {file.pages}</p>
+					{/if}
+				</div>
+			</div>
+		{/each}
+	</div>
+{/if}
