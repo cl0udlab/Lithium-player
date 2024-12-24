@@ -7,6 +7,7 @@ from enum import Enum
 from uuid import uuid4
 from ebooklib import epub
 from mobi import Mobi
+from PyPDF2 import PdfReader
 
 
 class FileType(str, Enum):
@@ -85,6 +86,7 @@ class FileParser:
                     "pages": len(book.get_items_of_type("page")),
                     "author": metadata.get("author"),
                     "publisher": metadata.get("publisher"),
+                    "format": "epub",
                 }
             elif file_path.suffix == ".mobi":
                 book = Mobi(file_path)
@@ -92,9 +94,24 @@ class FileParser:
                     "pages": book.get_pages(),
                     "author": book.get_author(),
                     "publisher": book.get_publisher(),
+                    "format": "mobi",
+                }
+            elif file_path.suffix == ".pdf":
+                reader = PdfReader(file_path)
+                metadata = reader.metadata
+                return {
+                    "pages": len(reader.pages),
+                    "author": metadata.get("/Author", "Unknown"),
+                    "publisher": metadata.get("/Producer", "Unknown"),
+                    "format": "pdf",
                 }
             else:
-                return {}
+                return {
+                    "pages": 0,
+                    "author": "Unknown",
+                    "publisher": "Unknown",
+                    "format": "txt",
+                }
         except Exception as e:
             print(f"Error parsing text file: {e}")
             return {}
@@ -140,12 +157,7 @@ class FileParser:
             audio_tracks = []
             for stream in container.streams:
                 if stream.type == "audio":
-                    audio_tracks.append(
-                        {
-                            "language": getattr(stream, "language", "und"),
-                            "codec": stream.codec_name,
-                        }
-                    )
+                    audio_tracks.append(getattr(stream, "language", "und"))
 
             metadata = {
                 "title": file_path.stem,

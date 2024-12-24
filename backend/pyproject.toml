@@ -22,6 +22,7 @@ pillow = "^11.0.0"
 ebooklib = "^0.18"
 mobi-python = "^0.0.1"
 colorlog = "^6.9.0"
+pypdf2 = "^3.0.1"
 
 
 [build-system]

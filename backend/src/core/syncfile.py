@@ -13,7 +13,7 @@ def sync_text_file(metadata: dict, db: Session):
         filepath=metadata.get("file_path"),
         file_size=metadata.get("file_size"),
         name=metadata.get("filename"),
-        file_format=metadata.get("file_format"),
+        file_format=metadata.get("format"),
         size=metadata.get("file_size"),
         pages=metadata.get("pages"),
         author=metadata.get("author"),
@@ -43,7 +43,7 @@ def sync_video_file(metadata: dict, db: Session):
         )
 
         video = Video(
-            title=metadata.get("title"),
+            title=metadata.get("title") or metadata.get("filename"),
             duration=metadata.get("duration", 0),
             description=metadata.get("description"),
             subtitles=metadata.get("subtitles", []),
@@ -53,6 +53,7 @@ def sync_video_file(metadata: dict, db: Session):
         )
 
         db.add(video)
+        db.add(video_file)
         db.commit()
         return video
 

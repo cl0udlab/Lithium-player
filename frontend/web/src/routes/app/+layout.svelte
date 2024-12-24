@@ -8,15 +8,13 @@
 	import Navbar from '$lib/components/navbar.svelte';
 	import Sidebar from '$lib/components/sidebar.svelte';
 	import 'vidstack/bundle';
-	import 'vidstack/player';
-	import 'vidstack/player/layouts/default';
-	import 'vidstack/player/ui';
+
 	import type { MediaPlayerElement } from 'vidstack/elements';
 	import { browser } from '$app/environment';
 	import { writable } from 'svelte/store';
 	import { setCookie } from '$lib/util';
 	import { page } from '$app/stores';
-	import type { MusicTrack } from '$lib/types';
+	import type { MusicTrack, Video } from '$lib/types';
 
 	let player = $state<MediaPlayerElement | null>(null);
 	let playerisable = $state(false);
@@ -26,6 +24,15 @@
 	const isExpanded = writable<boolean>(data.isExpanded);
 	const currentTrack = writable<MusicTrack | null>(null);
 	const isPlaying = writable(false);
+
+  function stopMusic() {
+    if(player) {
+      player.pause();
+      player.src = '';
+      $isPlaying = false;
+      playerisable = false;
+    }
+  }
 
 	function playMusic(track: MusicTrack) {
 		$currentTrack = track;
@@ -89,6 +96,11 @@
 		initPlayer();
 	}
 
+	function playVideo(video: Video) {
+    stopMusic();
+		goto(`/app/videoplay?id=${video.id}`);
+	}
+
 	function toggleMusicDetail() {
 		showMusicDetail = !showMusicDetail;
 	}
@@ -107,12 +119,14 @@
 		$playerState.isExpanded = !$playerState.isExpanded;
 		if ($playerState.isExpanded) {
 			goto('/app/play');
-		}else{
-      history.back();
-    }
+		} else {
+			history.back();
+		}
 	}
 
 	setContext('playMusic', playMusic);
+	setContext('playVideo', playVideo);
+  setContext('stopMusic', stopMusic);
 
 	$effect(() => {
 		if ($page.route.id === '/app/play') {

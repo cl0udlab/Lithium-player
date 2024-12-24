@@ -6,22 +6,22 @@ export const load = (async ({ fetch }) => {
 
 		if (!response.ok) {
 			return {
-				musics: [],
+				videos: [],
 				error: `載入失敗: ${response.statusText}`,
 				status: response.status
 			};
 		}
 
-		const musics = await response.json();
+		const videos = await response.json();
 		return {
-			musics,
+			videos,
 			error: null,
 			status: 200
 		};
 	} catch (e) {
     console.error(e);
 		return {
-			musics: [],
+			videos: [],
 			error: '無法連接到伺服器',
 			status: 500
 		};

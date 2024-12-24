@@ -1,6 +1,5 @@
 from db import engine, SQLModel
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 import json
 from pathlib import Path
 from core.setting import Setting
@@ -9,6 +8,7 @@ from routers.file import file_router
 from routers.stream import stream_router
 from routers.user import user_router
 from core.logger import logger
+from starlette.middleware.cors import CORSMiddleware
 
 SQLModel.metadata.create_all(engine)
 
@@ -28,16 +28,16 @@ def ping():
     return {"ping": "pong"}
 
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 app.include_router(auth_router)
 app.include_router(file_router)
 app.include_router(stream_router)
 app.include_router(user_router)
 logger.info("Server started")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
