@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+import re
 from typing import Dict, Union
 from tinytag import TinyTag
 import av
@@ -124,6 +125,11 @@ class FileParser:
             cover_art_id = None
             if cover_art and cover_art.data:
                 cover_art_id = FileParser.save_cover_art(cover_art.data)
+            year = None
+            if tag.year:
+                match = re.search(r'\d{4}', str(tag.year))
+                if match:
+                    year = int(match.group())
 
             return {
                 "title": tag.title or file_path.stem,
@@ -135,7 +141,7 @@ class FileParser:
                 "album_artist": tag.albumartist if tag.albumartist else tag.artist,
                 "composer": tag.composer,
                 "genre": tag.genre,
-                "year": tag.year,
+                "year": year,
                 "track_number": tag.track,
                 "disc_number": tag.disc,
                 "audio_type": "stereo" if (tag.channels or 0) > 1 else "mono",

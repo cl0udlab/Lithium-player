@@ -71,7 +71,7 @@ class Album(BaseModel, table=True):
     publisher: Optional[str] = Field(default=None)
     genre: Optional[str] = Field(default=None)
     release_year: Optional[int] = Field(default=None)
-    cover_art: Optional[bytes] = Field(default=None)
+    cover_art: Optional[str] = Field(default=None)
     total_tracks: Optional[int] = Field(default=None)
     total_discs: Optional[int] = Field(default=None)
     description: Optional[str] = Field(default=None)

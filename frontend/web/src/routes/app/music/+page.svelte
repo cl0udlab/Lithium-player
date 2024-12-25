@@ -3,6 +3,7 @@
 	import { getContext } from 'svelte';
 	import type { MusicTrack } from '$lib/types';
 	import { Play } from 'lucide-svelte';
+  import CD from '$lib/image/cd.svelte';
 	const { musics, error, status } = data;
 	const playMusic = getContext<(track: MusicTrack) => void>('playMusic');
 
@@ -32,11 +33,15 @@
 				class="bg-base-200 overflow-hidden rounded-lg shadow-lg transition-shadow hover:shadow-xl"
 			>
 				<div class="group relative">
-					<img
-						src={music.cover_art ? getCoverArtUrl(music.cover_art) : '/placeholder-album.png'}
-						alt="{music.title} Cover"
-						class="aspect-square w-full object-cover"
-					/>
+					{#if music.cover_art}
+						<img
+							src={getCoverArtUrl(music.cover_art)}
+							alt="{music.title} Cover"
+							class="aspect-square w-full object-cover"
+						/>
+					{:else}
+						<CD class="aspect-square w-full object-cover" />
+					{/if}
 					<button
 						class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
 						onclick={() => handlePlay(music)}

@@ -4,6 +4,7 @@ from db import get_db
 from core.fileparser import FileParser, FileType
 from sqlmodel import Session, select, union
 from models import VideoFile, MusicTrackFile, Video, MusicTrack, Album, FileModal
+from core.logger import logging
 
 
 def sync_text_file(metadata: dict, db: Session):
@@ -64,20 +65,19 @@ def sync_video_file(metadata: dict, db: Session):
 
 def sync_music_file(metadata: dict, db: Session):
     """同步音樂檔案到資料庫"""
-    musicdata = {
-        "title": metadata.get("title"),
-        "duration": metadata.get("duration", 0),
-        "artist": metadata.get("artist", "Unknown Artist"),
-        "album_artist": metadata.get("album_artist"),
-        "album": metadata.get("album"),
-        "release_year": metadata.get("year"),
-        "composer": metadata.get("composer"),
-        "genre": metadata.get("genre"),
-        "track_number": metadata.get("track_number"),
-        "disc_number": metadata.get("disc_number"),
-        "cover_art": metadata.get("cover_art"),
-    }
-    track = MusicTrack(**musicdata)
+    track = MusicTrack(
+        title=metadata.get("title"),
+        duration=metadata.get("duration"),
+        artist=metadata.get("artist"),
+        album_artist=metadata.get("album_artist"),
+        album=metadata.get("album"),
+        release_year=metadata.get("year"),
+        composer=metadata.get("composer"),
+        genre=metadata.get("genre"),
+        track_number=metadata.get("track_number"),
+        disc_number=metadata.get("disc_number"),
+        cover_art=metadata.get("cover_art"),
+    )
 
     track_file = MusicTrackFile(
         filename=metadata.get("filename"),
@@ -106,6 +106,7 @@ def sync_music_file(metadata: dict, db: Session):
                     album_artist=metadata.get("album_artist", "Unknown Artist"),
                     genre=metadata.get("genre"),
                     release_year=metadata.get("year"),
+                    cover_art=metadata.get("cover_art"),
                 )
                 db.add(album)
             track.album_ref = album
@@ -143,13 +144,15 @@ def sync_one_file(file_path: Path):
     db: Session = next(get_db())
     if not file_path.is_file():
         raise ValueError("Invalid file path")
+    file_path = file_path.resolve()
     query = union(select(VideoFile.filepath), select(MusicTrackFile.filepath))
-    exist_files = db.exec(query).all()
+    exist_files = [Path(f[0]).resolve() for f in db.exec(query).all()]
     if file_path in exist_files:
         raise ValueError("File already exists")
     try:
         file = FileParser().parse_file(file_path)
-    except Exception:
+    except Exception as e:
+        logging.error(f"Error parsing file {file_path}: {str(e)}")
         return
     if file.get("file_type") == FileType.MUSIC:
         sync_music_file(metadata=file, db=db)

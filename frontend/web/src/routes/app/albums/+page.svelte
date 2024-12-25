@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { getContext } from 'svelte';
 	import type { MusicTrack } from '$lib/types';
+	import Album from '$lib/image/album.svelte';
 
 	export let data: PageData;
 	const { albums, error, status } = data;
@@ -30,11 +31,15 @@
 				on:click={() => goto(`/app/albums/${album.id}`)}
 				on:keydown={(e) => e.key === 'Enter' && goto(`/app/albums/${album.id}`)}
 			>
-				<img
-					src={album.cover_art ? getCoverArtUrl(album.cover_art) : '/placeholder-album.png'}
-					alt={album.title}
-					class="aspect-square w-full object-cover"
-				/>
+				{#if album.cover_art}
+					<img
+						src={album.cover_art ? getCoverArtUrl(album.cover_art) : '/placeholder-album.png'}
+						alt={album.title}
+						class="aspect-square w-full object-cover"
+					/>
+				{:else}
+					<Album class="aspect-square w-full object-cover" />
+				{/if}
 				<button
 					class="btn btn-circle btn-primary absolute bottom-4 right-0 opacity-0 transition-opacity group-hover:opacity-100"
 					on:click|stopPropagation={() => playAlbum(album)}
