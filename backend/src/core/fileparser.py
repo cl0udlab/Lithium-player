@@ -9,6 +9,7 @@ from uuid import uuid4
 from ebooklib import epub
 from mobi import Mobi
 from PyPDF2 import PdfReader
+from core.logger import logger
 
 
 class FileType(str, Enum):
@@ -114,7 +115,7 @@ class FileParser:
                     "format": "txt",
                 }
         except Exception as e:
-            print(f"Error parsing text file: {e}")
+            logger.error(f"Error parsing text file: {e}")
             return {}
 
     @staticmethod
@@ -127,7 +128,7 @@ class FileParser:
                 cover_art_id = FileParser.save_cover_art(cover_art.data)
             year = None
             if tag.year:
-                match = re.search(r'\d{4}', str(tag.year))
+                match = re.search(r"\d{4}", str(tag.year))
                 if match:
                     year = int(match.group())
 
@@ -149,7 +150,7 @@ class FileParser:
                 "cover_art": cover_art_id,
             }
         except Exception as e:
-            print(f"Error parsing music file: {e}")
+            logger.error(f"Error parsing music file: {e}")
             return {}
 
     @staticmethod
@@ -160,6 +161,22 @@ class FileParser:
             video_stream: av.VideoStream = next(
                 s for s in container.streams if s.type == "video"
             )
+            cover_path = None
+            image_id = str(uuid4())
+            try:
+                container.seek(0)
+                for frame in container.decode(video=0):
+                    img = frame.to_image()
+                    covers_dir = Path("data/images")
+                    covers_dir.mkdir(parents=True, exist_ok=True)
+                    cover_path = covers_dir / f"{image_id}.jpg"
+                    img.thumbnail((500, 500))
+                    img.save(str(cover_path), "JPEG", quality=85)
+                    break
+
+            except Exception as e:
+                logger.error(f"Error extracting cover: {e}")
+
             audio_tracks = []
             for stream in container.streams:
                 if stream.type == "audio":
@@ -176,13 +193,14 @@ class FileParser:
                 "codec": video_stream.codec.name,
                 "format": file_path.suffix.lstrip("."),
                 "audio_tracks": audio_tracks,
+                "thumbnail": str(image_id) + ".jpg",
             }
 
             container.close()
             return metadata
 
         except Exception as e:
-            print(f"Error parsing video file: {e}")
+            logger.error(f"Error parsing video file: {e}")
             return {}
 
     @staticmethod

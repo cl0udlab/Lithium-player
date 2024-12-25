@@ -159,7 +159,10 @@ async def get_file(
 @file_router.post("/parse_file")
 async def parse_one_file(file_path: str):
     """解析1個檔案"""
-    data = sync_one_file(Path(file_path))
+    try:
+        data = sync_one_file(Path(file_path))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     print(data)
     return data
 

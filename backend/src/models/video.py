@@ -82,7 +82,7 @@ class Video(BaseModel, table=True):
     description: Optional[str] = Field(default=None)
     subtitles: list[str] = Field(sa_column=Column(ARRAY(String)))
     audio_tracks: list[str] = Field(sa_column=Column(ARRAY(String)))
-    thumbnail: Optional[bytes] = Field(default=None)
+    thumbnail: Optional[str] = Field(default=None)
 
     series_id: Optional[int] = Field(default=None, foreign_key="animeseries.id")
     episode_number: Optional[int] = Field(default=None)

@@ -3,6 +3,7 @@
 	import type { Filei } from '$lib/types';
 	import { FileText, FileImage, FileMusic, FileVideo, File } from 'lucide-svelte';
 	import FilePreview from '$lib/components/Filepreview.svelte';
+	import { onMount } from 'svelte';
 
 	const { files, error, status } = data;
 
@@ -34,6 +35,19 @@
 		selectedFile = file;
 		showPreview = true;
 	}
+
+	function handelEsc(e: KeyboardEvent) {
+		if (e.key === 'Escape') {
+			showPreview = false;
+		}
+	}
+
+	onMount(() => {
+		window.addEventListener('keydown', handelEsc);
+		return () => {
+			window.removeEventListener('keydown', handelEsc);
+		};
+	});
 </script>
 
 {#if showPreview && selectedFile !== null}

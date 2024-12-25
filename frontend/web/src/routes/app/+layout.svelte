@@ -20,6 +20,7 @@
 	import { setCookie } from '$lib/util';
 	import { page } from '$app/stores';
 	import type { MusicTrack, Video } from '$lib/types';
+	import Cd from '$lib/image/cd.svelte';
 
 	let player = $state<MediaPlayerElement | null>(null);
 
@@ -70,6 +71,9 @@
 			playerState.setExpanded(false);
 		}
 	});
+	function getCoverArtUrl(coverArt: string) {
+		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=300`;
+	}
 </script>
 
 <div class="flex min-h-screen flex-col">
@@ -103,12 +107,15 @@
 						<div class="h-[calc(100%-6rem)] p-4">
 							<div class="grid h-full grid-cols-2 gap-8">
 								<div class="flex items-center justify-center">
-									<img
-										src={$playerState.currentTrack?.albumArt ||
-											'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQI2K58h03rEdQC6vbTQhY3USrZ_FT-peeH4g&s'}
-										alt="Album art"
-										class="w-full max-w-md rounded-lg shadow-lg"
-									/>
+									{#if $playerState.currentTrack?.cover_art}
+										<img
+											src={getCoverArtUrl($playerState.currentTrack?.cover_art)}
+											alt="Album art"
+											class="w-full rounded-lg object-cover shadow-lg max-w-md"
+										/>
+									{:else}
+										<Cd class="w-full max-w-md" />
+									{/if}
 								</div>
 								<div class="flex flex-col">
 									<h2 class="mb-2 text-2xl font-bold">{$playerState.currentTrack?.title}</h2>
@@ -133,12 +140,15 @@
 					{:else}
 						<div class="grid h-24 w-full grid-cols-[auto_1fr_auto] items-center gap-4 px-4">
 							<div class="flex items-center gap-4">
-								<img
-									src={$playerState.currentTrack?.albumArt ||
-										'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQI2K58h03rEdQC6vbTQhY3USrZ_FT-peeH4g&s'}
-									alt="Album art"
-									class="h-16 w-16 rounded-lg object-cover"
-								/>
+								{#if $playerState.currentTrack?.cover_art}
+									<img
+										src={getCoverArtUrl($playerState.currentTrack?.cover_art)}
+										alt="Album art"
+										class="h-16 w-16 rounded-lg object-cover"
+									/>
+								{:else}
+									<Cd class="h-10 w-10" />
+								{/if}
 								<div>
 									<h3 class="text-lg font-medium">{$playerState.currentTrack?.title}</h3>
 									<p class="text-sm opacity-75">{$playerState.currentTrack?.artist}</p>

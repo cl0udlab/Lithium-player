@@ -9,7 +9,7 @@ export interface MusicTrack {
 	title: string;
 	artist: string;
 	album: string;
-	albumArt: string;
+	cover_art: string;
 }
 
 export interface Video {

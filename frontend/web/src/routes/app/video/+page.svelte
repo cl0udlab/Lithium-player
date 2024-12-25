@@ -22,6 +22,9 @@
 		}
 		return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 	}
+	function getCoverArtUrl(coverArt: string) {
+		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`;
+	}
 </script>
 
 {#if error}
@@ -40,7 +43,11 @@
 			<div class="card bg-base-200 shadow-xl">
 				<figure class="relative aspect-video w-full overflow-hidden">
 					{#if video.thumbnail}
-						<img src={video.thumbnail} alt={video.title} class="h-full w-full object-cover" />
+						<img
+							src={getCoverArtUrl(video.thumbnail)}
+							alt={video.title}
+							class="h-full w-full object-cover"
+						/>
 					{:else}
 						<div class="bg-base-300 h-full w-full"></div>
 					{/if}
