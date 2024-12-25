@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { stars } from '$lib/init/playerlist';
+	import { playerliststat } from '$lib/stores/playerlist.js';
 	import { onMount } from 'svelte';
 	import { getContext } from 'svelte';
 	import type { MusicTrack } from '$lib/types';
@@ -9,7 +9,7 @@
 	const { musics, error, status } = data;
 
 	onMount(() => {
-		stars.initialize();
+		playerliststat.initialize();
 	});
 
 	const playMusic = getContext<(track: MusicTrack) => void>('playMusic');

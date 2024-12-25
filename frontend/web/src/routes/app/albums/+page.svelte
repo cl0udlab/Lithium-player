@@ -21,7 +21,7 @@
 	}
 </script>
 
-<div class="grid grid-cols-1 gap-5 p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+<div class="grid grid-cols-1 gap-5 p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
 	{#each albums as album}
 		<div class="bg-base-200 overflow-hidden rounded-lg shadow-lg transition-shadow hover:shadow-xl">
 			<div
@@ -33,7 +33,7 @@
 			>
 				{#if album.cover_art}
 					<img
-						src={album.cover_art ? getCoverArtUrl(album.cover_art) : '/placeholder-album.png'}
+						src={getCoverArtUrl(album.cover_art)}
 						alt={album.title}
 						class="aspect-square w-full object-cover"
 					/>

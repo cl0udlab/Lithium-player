@@ -1,12 +1,14 @@
 <script lang="ts">
-	import { Play, Clock } from 'lucide-svelte';
+	import { Play } from 'lucide-svelte';
 	import type { PageData } from './$types';
 	import { getContext } from 'svelte';
 	import type { MusicTrack } from '$lib/types';
+	import Album from '$lib/image/album.svelte';
 
 	export let data: PageData;
 	const { album } = data;
 	const playMusic = getContext<(track: MusicTrack) => void>('playMusic');
+	const playMusiclist = getContext<(track: MusicTrack) => void>('playMusiclist');
 
 	function getCoverArtUrl(coverArt: string) {
 		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`;
@@ -19,19 +21,21 @@
 	}
 
 	function playAlbum() {
-		if (album.tracks && album.tracks.length > 0) {
-			playMusic(album.tracks[0]);
-		}
+		playMusiclist(album.tracks);
 	}
 </script>
 
 <div class="p-6">
 	<div class="flex gap-8">
-		<img
-			src={album.cover_art ? getCoverArtUrl(album.cover_art) : '/placeholder-album.png'}
-			alt={album.title}
-			class="h-64 w-64 rounded-lg object-cover shadow-xl"
-		/>
+		{#if album.cover_art}
+			<img
+				src={getCoverArtUrl(album.cover_art)}
+				alt={album.title}
+				class="h-64 w-64 rounded-lg object-cover shadow-xl"
+			/>
+		{:else}
+			<Album class="h-64 w-64 rounded-lg object-cover shadow-xl" />
+		{/if}
 		<div class="flex flex-col justify-between py-4">
 			<div>
 				<h1 class="mb-2 text-4xl font-bold">{album.title}</h1>

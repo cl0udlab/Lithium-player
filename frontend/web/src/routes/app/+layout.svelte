@@ -6,7 +6,6 @@
 	import { goto } from '$app/navigation';
 	import Navbar from '$lib/components/navbar.svelte';
 	import Sidebar from '$lib/components/sidebar.svelte';
-	// import 'vidstack/player/styles/base.css';
 	import 'vidstack/player/styles/default/theme.css';
 	import 'vidstack/player/styles/default/layouts/audio.css';
 	import 'vidstack/player/styles/default/layouts/video.css';
@@ -30,6 +29,11 @@
 	function stopMusic() {
 		playerState.stop();
 	}
+
+  function playMusiclist(musiclist: MusicTrack[]) {
+    playerState.setPlayer(player as MediaPlayerElement);
+    playerState.playMusiclist(musiclist);
+  }
 
 	function playMusic(track: MusicTrack) {
 		playerState.setPlayer(player as MediaPlayerElement);
@@ -63,6 +67,7 @@
 	setContext('playMusic', playMusic);
 	setContext('playVideo', playVideo);
 	setContext('stopMusic', stopMusic);
+  setContext('playMusiclist', playMusiclist);
 
 	$effect(() => {
 		if ($page.route.id === '/app/play') {

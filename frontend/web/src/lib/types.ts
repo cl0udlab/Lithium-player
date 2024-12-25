@@ -1,8 +1,5 @@
 export interface Playlist {
-	id: string;
-	name: string;
-	tracks: number[];
-	createdAt: number;
+	tracks: MusicTrack[];
 }
 export interface MusicTrack {
 	id: number;

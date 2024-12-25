@@ -38,7 +38,7 @@
 		{/if}
 	</div>
 {:else}
-	<div class="grid grid-cols-1 gap-5 p-4 md:grid-cols-2 lg:grid-cols-3">
+	<div class="grid grid-cols-1 gap-5 p-4 md:grid-cols-2 lg:grid-cols-4">
 		{#each videos as video}
 			<div class="card bg-base-200 shadow-xl">
 				<figure class="relative aspect-video w-full overflow-hidden">
