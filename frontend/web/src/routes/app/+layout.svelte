@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { setContext, type Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
-	import { ChevronUp } from 'lucide-svelte';
+	import { ChevronUp, ChevronLeft, ChevronRight, Play } from 'lucide-svelte';
 	import { playerState } from '$lib/stores/player';
 	import { goto } from '$app/navigation';
 	import Navbar from '$lib/components/navbar.svelte';
@@ -30,10 +30,10 @@
 		playerState.stop();
 	}
 
-  function playMusiclist(musiclist: MusicTrack[]) {
-    playerState.setPlayer(player as MediaPlayerElement);
-    playerState.playMusiclist(musiclist);
-  }
+	function playMusiclist(musiclist: MusicTrack[]) {
+		playerState.setPlayer(player as MediaPlayerElement);
+		playerState.playMusiclist(musiclist);
+	}
 
 	function playMusic(track: MusicTrack) {
 		playerState.setPlayer(player as MediaPlayerElement);
@@ -67,7 +67,7 @@
 	setContext('playMusic', playMusic);
 	setContext('playVideo', playVideo);
 	setContext('stopMusic', stopMusic);
-  setContext('playMusiclist', playMusiclist);
+	setContext('playMusiclist', playMusiclist);
 
 	$effect(() => {
 		if ($page.route.id === '/app/play') {
@@ -107,35 +107,30 @@
 					bind:this={player}
 				>
 					<media-provider></media-provider>
-
 					{#if $playerState.isExpanded}
 						<div class="h-[calc(100%-6rem)] p-4">
 							<div class="grid h-full grid-cols-2 gap-8">
-								<div class="flex items-center justify-center">
+								<div class="rounded-lgp-4 bg-base-300 w-72 p-4 shadow-lg">
 									{#if $playerState.currentTrack?.cover_art}
 										<img
 											src={getCoverArtUrl($playerState.currentTrack?.cover_art)}
 											alt="Album art"
-											class="w-full rounded-lg object-cover shadow-lg max-w-md"
+											class="mb-4 w-full rounded-lg bg-red-500 object-cover shadow-lg"
 										/>
 									{:else}
-										<Cd class="w-full max-w-md" />
+										<Cd class="mb-4 w-full" />
 									{/if}
+									<div class="mb-2 font-semibold">{$playerState.currentTrack?.title}</div>
+									<div class="mb-3 text-sm text-gray-600">{$playerState.currentTrack?.artist}</div>
+									<media-audio-layout> </media-audio-layout>
+								</div>
+								<div class="flex-1">
+									<div class="space-y-2 text-lg">
+										<div>placeholder1</div>
+										<div class="bg-black py-1 text-white">placeholder2</div>
+									</div>
 								</div>
 								<div class="flex flex-col">
-									<h2 class="mb-2 text-2xl font-bold">{$playerState.currentTrack?.title}</h2>
-									<p class="mb-8 text-lg opacity-75">{$playerState.currentTrack?.artist}</p>
-									<media-audio-layout>
-										<media-controls class="flex flex-col gap-4">
-											<media-time-slider class="w-full"></media-time-slider>
-											<div class="flex items-center justify-center gap-4">
-												<media-play-button></media-play-button>
-												<media-mute-button></media-mute-button>
-												<media-volume-slider></media-volume-slider>
-												<media-time-display></media-time-display>
-											</div>
-										</media-controls>
-									</media-audio-layout>
 									<button class="btn btn-ghost" onclick={togglePlayer}>
 										<ChevronUp class="rotate-180" />
 									</button>

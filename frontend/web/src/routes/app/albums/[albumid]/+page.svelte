@@ -44,7 +44,7 @@
 			</div>
 			<button class="btn btn-primary w-fit" on:click={playAlbum}>
 				<Play />
-				播放
+				播放全部
 			</button>
 		</div>
 	</div>

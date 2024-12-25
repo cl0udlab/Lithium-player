@@ -36,6 +36,15 @@ class AlbumResponse(BaseModel):
         orm_mode = True
 
 
+class InfoResponse(BaseModel):
+    Musics: list[MusicTrack]
+    Albums: list[Album]
+    Videos: list[Video]
+
+    class Config:
+        from_attributes = True
+
+
 file_router = APIRouter(prefix="/file", tags=["file"])
 
 # TODO: 之後再加入驗證middleware
@@ -58,6 +67,36 @@ async def get_image_file(
     image.save(image_io, format="JPEG")
     image_io.seek(0)
     return StreamingResponse(image_io, media_type="image/jpeg")
+
+
+@file_router.get("/info", response_model=InfoResponse)
+async def get_info(session: SessionDep, limit: int = 20):
+    """獲取所有檔案資訊"""
+    musics = session.exec(
+        select(MusicTrack)
+        .options(selectinload(MusicTrack.file), selectinload(MusicTrack.album_ref))
+        .limit(limit)
+    ).all()
+
+    albums = session.exec(
+        select(Album).options(selectinload(Album.tracks)).limit(limit)
+    ).all()
+
+    videos = session.exec(
+        select(Video)
+        .options(
+            selectinload(Video.file),
+            selectinload(Video.series),
+            selectinload(Video.tags),
+        )
+        .limit(limit)
+    ).all()
+
+    return {
+        "Musics": [track.model_dump() for track in musics],
+        "Albums": [album.model_dump() for album in albums],
+        "Videos": [video.model_dump() for video in videos],
+    }
 
 
 @file_router.get("/album", response_model=Union[AlbumResponse, List[AlbumResponse]])

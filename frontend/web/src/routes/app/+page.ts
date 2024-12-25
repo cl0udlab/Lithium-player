@@ -2,27 +2,27 @@ import type { PageLoad } from './$types';
 
 export const load = (async ({ fetch }) => {
 	try {
-		const response = await fetch('http://localhost:8000/file/music');
+		const responsemusic = await fetch('http://localhost:8000/file/info');
 
-		if (!response.ok) {
+		if (!responsemusic.ok) {
 			return {
-				musics: [],
-				error: `載入失敗: ${response.statusText}`,
-				status: response.status
+				info: [],
+				error: `載入失敗: ${responsemusic.statusText}`,
+				status: responsemusic.status
 			};
 		}
 
-		const musics = await response.json();
-    console.log(musics);
+		const info = await responsemusic.json();
+		console.log(info);
 		return {
-			musics,
+			info,
 			error: null,
 			status: 200
 		};
 	} catch (e) {
-    console.error(e);
+		console.error(e);
 		return {
-			musics: [],
+			info: [],
 			error: '無法連接到伺服器',
 			status: 500
 		};
