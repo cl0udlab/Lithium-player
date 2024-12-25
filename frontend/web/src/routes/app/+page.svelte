@@ -5,7 +5,7 @@
 	import type { MusicTrack, Video } from '$lib/types';
 	import { Play } from 'lucide-svelte';
 	import CD from '$lib/image/cd.svelte';
-  import Album from '$lib/image/album.svelte';
+	import Album from '$lib/image/album.svelte';
 	import { goto } from '$app/navigation';
 	export let data;
 	const { info, error, status } = data;
@@ -42,38 +42,37 @@
 	<div class="flex flex-col gap-8 p-4">
 		<section class="space-y-4">
 			<h2 class="text-primary text-2xl font-bold">推薦專輯</h2>
-			<div class="overflow-x-auto">
-				<div class="grid grid-cols-2 gap-4 overflow-hidden lg:grid-cols-4 xl:grid-cols-6">
-					{#each info.Albums.sort(() => Math.random() - 0.5).slice(0, 10) as album}
-						<div
-							class="bg-base-200 w-64 flex-shrink-0 rounded-lg shadow-lg backdrop-blur-sm transition-all hover:scale-105"
-						>
-							<div class="group relative">
-								{#if album.cover_art}
-									<img
-										src={getCoverArtUrl(album.cover_art)}
-										alt="{album.title} Cover"
-										class="aspect-square w-full rounded-t-lg object-cover"
-									/>
-								{:else}
-									<Album class="bg-base-300 aspect-square w-full rounded-t-lg" />
-								{/if}
-								<button
-									class="bg-primary/30 absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-sm transition-all group-hover:opacity-100"
-									onclick={() => goto(`/app/albums/${album.id}`)}
-									onkeydown={(e) => e.key === 'Enter' && goto(`/app/albums/${album.id}`)}
-								>
-									<Play class="text-base-100" size={48} />
-								</button>
-							</div>
-							<div class="p-4">
-								<h3 class="truncate text-lg font-bold">{album.title}</h3>
-								<p class="truncate text-sm opacity-75">{album.artist}</p>
-								<p class="mt-1 text-xs opacity-60">{album.tracks?.length || 0} 首歌曲</p>
-							</div>
+			<div class="grid grid-cols-2 gap-4 overflow-hidden lg:grid-cols-3 xl:grid-cols-6">
+				{#each info.Albums.sort(() => Math.random() - 0.5).slice(0, 10) as album}
+					<div
+						class="bg-base-200 w-64 flex-shrink-0 rounded-lg shadow-lg backdrop-blur-sm transition-all hover:scale-105"
+						id={album.id}
+					>
+						<div class="group relative">
+							{#if album.cover_art}
+								<img
+									src={getCoverArtUrl(album.cover_art)}
+									alt="{album.title} Cover"
+									class="aspect-square w-full rounded-t-lg object-cover"
+								/>
+							{:else}
+								<Album class="bg-base-300 aspect-square w-full rounded-t-lg" />
+							{/if}
+							<button
+								class="bg-primary/30 absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-sm transition-all group-hover:opacity-100"
+								onclick={() => goto(`/app/albums/${album.id}`)}
+								onkeydown={(e) => e.key === 'Enter' && goto(`/app/albums/${album.id}`)}
+							>
+								<Play class="text-base-100" size={48} />
+							</button>
 						</div>
-					{/each}
-				</div>
+						<div class="p-4">
+							<h3 class="truncate text-lg font-bold">{album.title}</h3>
+							<p class="truncate text-sm opacity-75">{album.artist}</p>
+							<p class="mt-1 text-xs opacity-60">{album.tracks?.length || 0} 首歌曲</p>
+						</div>
+					</div>
+				{/each}
 			</div>
 		</section>
 
@@ -84,6 +83,7 @@
 				{#each info.Musics.slice(0, 12) as music}
 					<div
 						class="bg-base-200 rounded-lg shadow-lg backdrop-blur-sm transition-all hover:scale-105"
+						id={music.id}
 					>
 						<div class="group relative">
 							{#if music.cover_art}
@@ -117,6 +117,7 @@
 				{#each info.Videos || [] as video}
 					<div
 						class="bg-base-200 overflow-hidden rounded-lg shadow-lg backdrop-blur-sm transition-all hover:scale-105"
+						id={video.id}
 					>
 						<div class="group relative">
 							{#if video.thumbnail}

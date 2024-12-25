@@ -130,13 +130,21 @@ def sync_dir_file(dir_path: Path) -> list:
     for root, _, files in os.walk(dir_path):
         for file in files:
             file_path = Path(root) / file
-            # TODO: Error log
             if file_path in exist_files:
+                logging.debug(f"File {file_path} already exists")
                 continue
             try:
                 files.append(FileParser().parse_file(file_path))
-            except Exception:
+            except Exception as e:
+                logging.error(f"Error parsing file {file_path} : {str(e)}")
                 pass
+    for file in files:
+        if file.get("file_type") == FileType.MUSIC:
+            sync_music_file(metadata=file, db=db)
+        elif file.get("file_type") == FileType.VIDEO:
+            sync_video_file(metadata=file, db=db)
+        elif file.get("file_type") == FileType.TEXT:
+            sync_text_file(metadata=file, db=db)
     return files
 
 
