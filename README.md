@@ -7,7 +7,7 @@ Lithium Player 是一個現代化的多媒體播放應用程式，支援音樂�
 ### Docker Compose 部署
 
 ```sh
-git clone https://github.com/your-username/lithium-player.git
+git clone https://github.com/cl0udlab/Lithium-player
 cd lithium-player
 docker-compose up -d
 ```
@@ -17,7 +17,7 @@ docker-compose up -d
 1. clone專案:
 
 ```sh
-git clone https://github.com/your-username/lithium-player.git
+git clone https://github.com/cl0udlab/Lithium-player
 cd lithium-player
 ```
 
