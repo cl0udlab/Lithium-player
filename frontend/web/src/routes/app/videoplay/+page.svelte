@@ -35,6 +35,10 @@
 	}
 </script>
 
+<svelte:head>
+  <title>{video.title} - Lithium Player</title>
+</svelte:head>
+
 <div class="fixed inset-0 bg-black">
 	<media-player bind:this={player} class="h-full" autoplay>
 		<media-provider>

@@ -27,6 +27,10 @@
 	}
 </script>
 
+<svelte:head>
+  <title>影片 - Lithium Player</title>
+</svelte:head>
+
 {#if error}
 	<div class="text-error flex flex-col items-center justify-center p-8">
 		<h2 class="mb-4 text-2xl font-bold">載入失敗</h2>

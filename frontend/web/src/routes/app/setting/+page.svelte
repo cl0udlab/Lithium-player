@@ -139,6 +139,10 @@
 	}
 </script>
 
+<svelte:head>
+  <title>設定 - Lithium Player</title>
+</svelte:head>
+
 <div class="p-4">
 	<h1 class="mb-6 text-2xl font-bold">系統設定</h1>
 

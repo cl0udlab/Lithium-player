@@ -25,6 +25,10 @@
 	}
 </script>
 
+<svelte:head>
+  <title>{album.title} - Lithium Player</title>
+</svelte:head>
+
 <div class="p-6">
 	<div class="flex gap-8">
 		{#if album.cover_art}

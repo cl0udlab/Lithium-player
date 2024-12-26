@@ -45,6 +45,10 @@
 	}
 </script>
 
+<svelte:head>
+  <title>登入 - Lithium Player</title>
+</svelte:head>
+
 <div class="bg-base-200 flex min-h-screen items-center justify-center p-4">
 	<div class="card bg-base-100 hover:shadow-3xl w-96 shadow-2xl transition-shadow duration-300">
 		<div class="card-body p-8">

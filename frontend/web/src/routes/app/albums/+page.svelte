@@ -21,6 +21,11 @@
 	}
 </script>
 
+<svelte:head>
+  <title>專輯 - Lithium Player</title>
+</svelte:head>
+
+
 <div class="grid grid-cols-1 gap-5 p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
 	{#each albums as album}
 		<div class="bg-base-200 overflow-hidden rounded-lg shadow-lg transition-shadow hover:shadow-xl">

@@ -50,6 +50,10 @@
 	});
 </script>
 
+<svelte:head>
+  <title>檔案 - Lithium Player</title>
+</svelte:head>
+
 {#if showPreview && selectedFile !== null}
 	<FilePreview
 		filePath={selectedFile.filepath}
