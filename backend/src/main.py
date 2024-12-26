@@ -9,6 +9,7 @@ from routers.authr import auth_router
 from routers.file import file_router
 from routers.stream import stream_router
 from routers.user import user_router
+from routers.setting import setting_router
 from core.logger import logger
 from starlette.middleware.cors import CORSMiddleware
 
@@ -35,6 +36,7 @@ app.include_router(auth_router)
 app.include_router(file_router)
 app.include_router(stream_router)
 app.include_router(user_router)
+app.include_router(setting_router)
 logger.info("Server started")
 
 app.add_middleware(

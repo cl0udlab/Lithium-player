@@ -69,7 +69,7 @@
 						<div class="p-4">
 							<h3 class="truncate text-lg font-bold">{album.title}</h3>
 							<p class="truncate text-sm opacity-75">{album.artist}</p>
-							<p class="mt-1 text-xs opacity-60">{album.tracks?.length || 0} 首歌曲</p>
+							<p class="mt-1 text-xs opacity-60">{album.total_tracks || 0} 首歌曲</p>
 						</div>
 					</div>
 				{/each}

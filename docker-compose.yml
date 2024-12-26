@@ -14,8 +14,7 @@ services:
       - lithium-network
 
   backend:
-    build:
-      context: ./backend
+    image: phillychi3/lithium-player-backend:latest
     container_name: lithium-backend
     volumes:
       - backend:/app/data
@@ -29,8 +28,7 @@ services:
       - postgres
 
   frontend:
-    build:
-      context: ./frontend/web
+    image: phillychi3/lithium-player-frontend:latest
     container_name: lithium-frontend
     volumes:
       - ./frontend:/app

@@ -17,6 +17,10 @@ import io
 from pydantic import BaseModel
 
 
+class FilePathRequest(BaseModel):
+    file_path: str
+
+
 class AlbumResponse(BaseModel):
     id: Optional[int] = None
     created_at: Optional[datetime] = None
@@ -196,10 +200,10 @@ async def get_file(
 
 
 @file_router.post("/parse_file")
-async def parse_one_file(file_path: str):
+async def parse_one_file(request: FilePathRequest):
     """解析1個檔案"""
     try:
-        data = sync_one_file(Path(file_path))
+        data = sync_one_file(Path(request.file_path))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     print(data)
@@ -207,10 +211,10 @@ async def parse_one_file(file_path: str):
 
 
 @file_router.post("/scanall")
-async def scan_all_files(dir_path: Optional[str] = None):
+async def scan_all_files(request: FilePathRequest):
     """掃描所有檔案"""
-    if dir_path:
-        sync_dir_file(Path(dir_path))
+    if Path(request.file_path):
+        sync_dir_file(Path(request.file_path))
     else:
         for dir in load_setting().storages:
             sync_dir_file(dir.path)

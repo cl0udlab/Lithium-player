@@ -1,5 +1,7 @@
 from pathlib import Path
 import os
+
+from sqlalchemy import func
 from db import get_db
 from core.fileparser import FileParser, FileType
 from sqlmodel import Session, select, union
@@ -63,6 +65,23 @@ def sync_video_file(metadata: dict, db: Session):
         raise Exception(f"同步影片檔案失敗: {str(e)}")
 
 
+def sync_album_data(album_id: int, db: Session):
+    """更新專輯的資料 專輯數量等..."""
+    album = db.exec(select(Album).where(Album.id == album_id)).first()
+    if not album:
+        raise ValueError("Album not found")
+
+    album.total_tracks = db.exec(
+        select(func.count())
+        .select_from(MusicTrack)
+        .where(MusicTrack.album_id == album_id)
+    ).first()
+
+    db.add(album)
+    db.commit()
+    return album
+
+
 def sync_music_file(metadata: dict, db: Session):
     """同步音樂檔案到資料庫"""
     track = MusicTrack(
@@ -112,6 +131,9 @@ def sync_music_file(metadata: dict, db: Session):
             track.album_ref = album
         db.add(track_file)
         db.commit()
+
+        if track.album_id:
+            sync_album_data(track.album_id, db)
 
         return track_file
 
