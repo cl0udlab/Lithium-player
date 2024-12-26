@@ -33,7 +33,9 @@
 	},
 	"dependencies": {
 		"@sveltejs/adapter-node": "^5.2.11",
+		"@types/js-cookie": "^3.0.6",
 		"daisyui": "^4.12.22",
+		"js-cookie": "^3.0.5",
 		"lucide-svelte": "^0.468.0",
 		"vidstack": "^1.12.12"
 	}

@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import Annotated, List, Optional, Union
-from fastapi import APIRouter, Query, UploadFile, Depends, HTTPException
+from fastapi import APIRouter, Query, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy import literal
 from models.music import MusicTrack, Album
 from models.video import Video
 from models.file import FileModal
-from sqlmodel import Session, select, or_
+from sqlmodel import Session, desc, select, or_
 from sqlalchemy.orm import selectinload
 from db import get_db
 from core.syncfile import sync_one_file, sync_dir_file
@@ -80,6 +80,7 @@ async def get_info(session: SessionDep, limit: int = 20):
         select(MusicTrack)
         .options(selectinload(MusicTrack.file), selectinload(MusicTrack.album_ref))
         .limit(limit)
+        .order_by(desc(MusicTrack.id))
     ).all()
 
     albums = session.exec(

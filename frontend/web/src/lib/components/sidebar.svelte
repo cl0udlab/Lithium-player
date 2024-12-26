@@ -4,6 +4,7 @@
 	import { File } from 'lucide-svelte';
 	import { FileVideo } from 'lucide-svelte';
 	import { House } from 'lucide-svelte';
+	import { Settings2 } from 'lucide-svelte';
 
 	export let isExpanded = true;
 
@@ -19,8 +20,8 @@
 		class="border-base-300 bg-base-100 fixed left-0 top-0 z-40 h-screen w-64 border-r pt-20 transition-transform sm:translate-x-0"
 		aria-label="Sidebar"
 	>
-		<div class="bg-base-100 h-full overflow-y-auto px-3 pb-4">
-			<div class="space-y-2 font-medium">
+		<div class="bg-base-100 flex h-full flex-col justify-between overflow-y-auto px-3 pb-4">
+			<div class="flex flex-col space-y-2 font-medium">
 				<a href="/app" class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2">
 					<House />
 					<span class="ms-3">Overview</span>
@@ -69,6 +70,15 @@
 					<span class="ms-3">File</span>
 				</a>
 			</div>
+			<div class="mt-auto pt-4">
+				<a
+					href="/app/setting"
+					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+				>
+					<Settings2 />
+					<span class="ms-3">設定</span>
+				</a>
+			</div>
 		</div>
 	</aside>
 {:else}
@@ -100,6 +110,14 @@
 					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
 				>
 					<File />
+				</a>
+			</div>
+			<div class="mt-auto pt-4">
+				<a
+					href="/app/setting"
+					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+				>
+					<Settings2 />
 				</a>
 			</div>
 		</div>

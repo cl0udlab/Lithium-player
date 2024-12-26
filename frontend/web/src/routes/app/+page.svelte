@@ -113,7 +113,7 @@
 
 		<section class="space-y-4">
 			<h2 class="text-primary text-2xl font-bold">影片清單</h2>
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 				{#each info.Videos || [] as video}
 					<div
 						class="bg-base-200 overflow-hidden rounded-lg shadow-lg backdrop-blur-sm transition-all hover:scale-105"

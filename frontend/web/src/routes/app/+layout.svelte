@@ -16,10 +16,10 @@
 	import type { MediaPlayerElement } from 'vidstack/elements';
 	import { browser } from '$app/environment';
 	import { writable } from 'svelte/store';
-	import { setCookie } from '$lib/util';
 	import { page } from '$app/stores';
 	import type { MusicTrack, Video } from '$lib/types';
 	import Cd from '$lib/image/cd.svelte';
+	import Cookies from 'js-cookie';
 
 	let player = $state<MediaPlayerElement | null>(null);
 
@@ -49,7 +49,7 @@
 		isExpanded.update((value) => {
 			const newValue = !value;
 			if (browser) {
-				setCookie('isExpanded', String(newValue));
+				Cookies.set('isExpanded', String(newValue));
 			}
 			return newValue;
 		});

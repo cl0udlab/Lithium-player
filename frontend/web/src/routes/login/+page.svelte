@@ -1,9 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import type { PageData } from './$types';
 	import { Music } from 'lucide-svelte';
+	import Cookies from 'js-cookie';
 
-	export let data: PageData;
+	interface LoginResponse {
+		access_token: string;
+		refresh_token: string;
+		token_type: string;
+	}
 
 	let username = '';
 	let password = '';
@@ -15,10 +19,28 @@
 			return;
 		}
 
-		if (username === 'admin' && password === 'admin') {
+		try {
+			const response = await fetch('http://localhost:8000/auth/login', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ username, password })
+			});
+
+			if (!response.ok) {
+				const data = await response.json();
+				error = data.detail || '登入失敗';
+				return;
+			}
+
+			const data: LoginResponse = await response.json();
+			Cookies.set('access_token', data.access_token);
+			Cookies.set('refresh_token', data.refresh_token);
+
 			await goto('/app');
-		} else {
-			error = '帳號或密碼錯誤';
+		} catch (err) {
+			error = '伺服器連接失敗';
 		}
 	}
 </script>

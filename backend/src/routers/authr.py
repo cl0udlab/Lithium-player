@@ -46,7 +46,7 @@ async def register(register_data: RegisterRequest, session: SessionDep):
 @auth_router.post("/login", response_model=Token)
 async def login(login_data: LoginRequest, session: SessionDep):
     """使用者登入"""
-    user: User = session.exec(select(User).where(User.username == login_data.username))
+    user: User = session.exec(select(User).where(User.username == login_data.username)).first()
     if user is None or not verify_password(login_data.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid credentials")
     return create_tokens(user.id)
