@@ -33,6 +33,7 @@
 	},
 	"dependencies": {
 		"@sveltejs/adapter-node": "^5.2.11",
+		"daisyui": "^4.12.22",
 		"lucide-svelte": "^0.468.0",
 		"vidstack": "^1.12.12"
 	}

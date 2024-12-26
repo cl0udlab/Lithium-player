@@ -23,6 +23,7 @@ ebooklib = "^0.18"
 mobi-python = "^0.0.1"
 colorlog = "^6.9.0"
 pypdf2 = "^3.0.1"
+python-dotenv = "^1.0.1"
 
 
 [build-system]

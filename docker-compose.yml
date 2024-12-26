@@ -21,6 +21,8 @@ services:
       - backend:/app/data
     ports:
       - "8000:8000"
+    environment:
+      SQLIP: postgres
     networks:
       - lithium-network
     depends_on:

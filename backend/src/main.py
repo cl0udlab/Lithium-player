@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 from db import engine, SQLModel
 from fastapi import FastAPI
 import json
@@ -9,6 +11,7 @@ from routers.stream import stream_router
 from routers.user import user_router
 from core.logger import logger
 from starlette.middleware.cors import CORSMiddleware
+
 
 SQLModel.metadata.create_all(engine)
 
@@ -36,7 +39,12 @@ logger.info("Server started")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173","http://localhost:4173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://localhost",
+        "http://localhost:80",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
