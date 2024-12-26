@@ -1,5 +1,5 @@
-import type { Config } from 'tailwindcss';
-import disyui from 'daisyui';
+import type { Config } from 'tailwindcss'
+import disyui from 'daisyui'
 import vidstack from 'vidstack/tailwind.cjs'
 
 export default {
@@ -13,4 +13,4 @@ export default {
 	daisyui: {
 		themes: ['light', 'dark']
 	}
-} satisfies Config;
+} satisfies Config

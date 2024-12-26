@@ -1,40 +1,39 @@
 <script lang="ts">
-	import { playerliststat } from '$lib/stores/playerlist.js';
-	import { onMount } from 'svelte';
-	import { getContext } from 'svelte';
-	import type { MusicTrack, Video } from '$lib/types';
-	import { Play } from 'lucide-svelte';
-	import CD from '$lib/image/cd.svelte';
-	import Album from '$lib/image/album.svelte';
-	import { goto } from '$app/navigation';
-	export let data;
-	const { info, error, status } = data;
+	import { playerliststat } from '$lib/stores/playerlist.js'
+	import { onMount } from 'svelte'
+	import { getContext } from 'svelte'
+	import type { MusicTrack, Video } from '$lib/types'
+	import { Play } from 'lucide-svelte'
+	import CD from '$lib/image/cd.svelte'
+	import Album from '$lib/image/album.svelte'
+	import { goto } from '$app/navigation'
+	export let data
+	const { info, error, status } = data
 
 	onMount(() => {
-		playerliststat.initialize();
-	});
+		playerliststat.initialize()
+	})
 
-	const playMusic = getContext<(track: MusicTrack) => void>('playMusic');
-	const playVideo = getContext<(video: Video) => void>('playVideo');
+	const playMusic = getContext<(track: MusicTrack) => void>('playMusic')
+	const playVideo = getContext<(video: Video) => void>('playVideo')
 	function handlePlay(track: MusicTrack) {
-		playMusic(track);
+		playMusic(track)
 	}
 
 	function handlePlayVideo(video: Video) {
-		playVideo(video);
+		playVideo(video)
 	}
 	function getCoverArtUrl(coverArt: string) {
-		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`;
+		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`
 	}
 </script>
 
 <svelte:head>
-  <title>首頁 - Lithium Player</title>
+	<title>首頁 - Lithium Player</title>
 </svelte:head>
 
-
 {#if error}
-	<div class="text-error flex flex-col items-center justify-center p-8">
+	<div class="flex flex-col items-center justify-center p-8 text-error">
 		<h2 class="mb-4 text-2xl font-bold">載入失敗</h2>
 		<p class="text-lg">{error}</p>
 		{#if status === 500}
@@ -46,11 +45,11 @@
 {:else}
 	<div class="flex flex-col gap-8 p-4">
 		<section class="space-y-4">
-			<h2 class="text-primary text-2xl font-bold">推薦專輯</h2>
+			<h2 class="text-2xl font-bold text-primary">推薦專輯</h2>
 			<div class="grid grid-cols-2 gap-4 overflow-hidden lg:grid-cols-3 xl:grid-cols-6">
 				{#each info.Albums.sort(() => Math.random() - 0.5).slice(0, 10) as album}
 					<div
-						class="bg-base-200 w-64 flex-shrink-0 rounded-lg shadow-lg backdrop-blur-sm transition-all hover:scale-105"
+						class="w-64 flex-shrink-0 rounded-lg bg-base-200 shadow-lg backdrop-blur-sm transition-all hover:scale-105"
 						id={album.id}
 					>
 						<div class="group relative">
@@ -61,10 +60,10 @@
 									class="aspect-square w-full rounded-t-lg object-cover"
 								/>
 							{:else}
-								<Album class="bg-base-300 aspect-square w-full rounded-t-lg" />
+								<Album class="aspect-square w-full rounded-t-lg bg-base-300" />
 							{/if}
 							<button
-								class="bg-primary/30 absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-sm transition-all group-hover:opacity-100"
+								class="absolute inset-0 flex items-center justify-center bg-primary/30 opacity-0 backdrop-blur-sm transition-all group-hover:opacity-100"
 								onclick={() => goto(`/app/albums/${album.id}`)}
 								onkeydown={(e) => e.key === 'Enter' && goto(`/app/albums/${album.id}`)}
 							>
@@ -83,11 +82,11 @@
 
 		<!-- 最新加入 -->
 		<section class="space-y-4">
-			<h2 class="text-primary text-2xl font-bold">最新加入</h2>
+			<h2 class="text-2xl font-bold text-primary">最新加入</h2>
 			<div class="grid grid-cols-2 gap-4 lg:grid-cols-4 xl:grid-cols-6">
 				{#each info.Musics.slice(0, 12) as music}
 					<div
-						class="bg-base-200 rounded-lg shadow-lg backdrop-blur-sm transition-all hover:scale-105"
+						class="rounded-lg bg-base-200 shadow-lg backdrop-blur-sm transition-all hover:scale-105"
 						id={music.id}
 					>
 						<div class="group relative">
@@ -98,10 +97,10 @@
 									class="aspect-square w-full rounded-t-lg object-cover"
 								/>
 							{:else}
-								<CD class="bg-base-300 aspect-square w-full rounded-t-lg" />
+								<CD class="aspect-square w-full rounded-t-lg bg-base-300" />
 							{/if}
 							<button
-								class="bg-primary/30 absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-sm transition-all group-hover:opacity-100"
+								class="absolute inset-0 flex items-center justify-center bg-primary/30 opacity-0 backdrop-blur-sm transition-all group-hover:opacity-100"
 								onclick={() => handlePlay(music)}
 							>
 								<Play class="text-base-100" size={36} />
@@ -117,11 +116,11 @@
 		</section>
 
 		<section class="space-y-4">
-			<h2 class="text-primary text-2xl font-bold">影片清單</h2>
+			<h2 class="text-2xl font-bold text-primary">影片清單</h2>
 			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 				{#each info.Videos || [] as video}
 					<div
-						class="bg-base-200 overflow-hidden rounded-lg shadow-lg backdrop-blur-sm transition-all hover:scale-105"
+						class="overflow-hidden rounded-lg bg-base-200 shadow-lg backdrop-blur-sm transition-all hover:scale-105"
 						id={video.id}
 					>
 						<div class="group relative">
@@ -132,10 +131,10 @@
 									class="aspect-video w-full object-cover"
 								/>
 							{:else}
-								<div class="bg-base-300 aspect-video w-full"></div>
+								<div class="aspect-video w-full bg-base-300"></div>
 							{/if}
 							<button
-								class="bg-primary/30 absolute inset-0 flex items-center justify-center opacity-0 backdrop-blur-sm transition-all group-hover:opacity-100"
+								class="absolute inset-0 flex items-center justify-center bg-primary/30 opacity-0 backdrop-blur-sm transition-all group-hover:opacity-100"
 								onclick={() => handlePlayVideo(video)}
 							>
 								<Play class="text-base-100" size={48} />

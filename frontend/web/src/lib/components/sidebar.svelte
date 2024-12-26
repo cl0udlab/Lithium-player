@@ -1,35 +1,35 @@
 <script>
-	import { crossfade } from 'svelte/transition';
-	import { Music } from 'lucide-svelte';
-	import { File } from 'lucide-svelte';
-	import { FileVideo } from 'lucide-svelte';
-	import { House } from 'lucide-svelte';
-	import { Settings2 } from 'lucide-svelte';
+	import { crossfade } from 'svelte/transition'
+	import { Music } from 'lucide-svelte'
+	import { File } from 'lucide-svelte'
+	import { FileVideo } from 'lucide-svelte'
+	import { House } from 'lucide-svelte'
+	import { Settings2 } from 'lucide-svelte'
 
-	export let isExpanded = true;
+	export let isExpanded = true
 
 	const [send, receive] = crossfade({
 		duration: 160
-	});
+	})
 </script>
 
 {#if isExpanded}
 	<aside
 		in:receive={{ key: 'sidebar' }}
 		out:send={{ key: 'sidebar' }}
-		class="border-base-300 bg-base-100 fixed left-0 top-0 z-40 h-screen w-64 border-r pt-20 transition-transform sm:translate-x-0"
+		class="fixed left-0 top-0 z-40 h-screen w-64 border-r border-base-300 bg-base-100 pt-20 transition-transform sm:translate-x-0"
 		aria-label="Sidebar"
 	>
-		<div class="bg-base-100 flex h-full flex-col justify-between overflow-y-auto px-3 pb-4">
+		<div class="flex h-full flex-col justify-between overflow-y-auto bg-base-100 px-3 pb-4">
 			<div class="flex flex-col space-y-2 font-medium">
-				<a href="/app" class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2">
+				<a href="/app" class="flex items-center rounded-lg p-2 text-base-content hover:bg-base-100">
 					<House />
 					<span class="ms-3">Overview</span>
 				</a>
-				<div class="collapse-arrow collapse">
+				<div class="collapse collapse-arrow">
 					<input type="checkbox" />
 					<div
-						class="collapse-title hover:bg-base-100 flex min-h-0 items-center rounded-lg px-2 py-1.5"
+						class="collapse-title flex min-h-0 items-center rounded-lg px-2 py-1.5 hover:bg-base-100"
 					>
 						<Music />
 						<span class="ms-3">Music</span>
@@ -39,7 +39,7 @@
 							<li>
 								<a
 									href="/app/music"
-									class="hover:bg-base-100 flex items-center rounded-lg px-2 py-1.5"
+									class="flex items-center rounded-lg px-2 py-1.5 hover:bg-base-100"
 								>
 									<span class="ms-3">音樂</span>
 								</a>
@@ -47,7 +47,7 @@
 							<li>
 								<a
 									href="/app/albums"
-									class="hover:bg-base-100 flex items-center rounded-lg px-2 py-1.5"
+									class="flex items-center rounded-lg px-2 py-1.5 hover:bg-base-100"
 								>
 									<span class="ms-3">專輯</span>
 								</a>
@@ -57,14 +57,14 @@
 				</div>
 				<a
 					href="/app/video"
-					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+					class="flex items-center rounded-lg p-2 text-base-content hover:bg-base-100"
 				>
 					<FileVideo />
 					<span class="ms-3">Video</span>
 				</a>
 				<a
 					href="/app/file"
-					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+					class="flex items-center rounded-lg p-2 text-base-content hover:bg-base-100"
 				>
 					<File />
 					<span class="ms-3">File</span>
@@ -73,7 +73,7 @@
 			<div class="mt-auto pt-4">
 				<a
 					href="/app/setting"
-					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+					class="flex items-center rounded-lg p-2 text-base-content hover:bg-base-100"
 				>
 					<Settings2 />
 					<span class="ms-3">設定</span>
@@ -85,29 +85,29 @@
 	<aside
 		in:receive={{ key: 'sidebar' }}
 		out:send={{ key: 'sidebar' }}
-		class="border-base-300 bg-base-100 fixed left-0 top-0 z-40 h-screen w-16 border-r pt-20 transition-transform sm:translate-x-0"
+		class="fixed left-0 top-0 z-40 h-screen w-16 border-r border-base-300 bg-base-100 pt-20 transition-transform sm:translate-x-0"
 		aria-label="Sidebar"
 	>
-		<div class="bg-base-100 flex h-full flex-col items-center overflow-hidden px-3 pb-4">
+		<div class="flex h-full flex-col items-center overflow-hidden bg-base-100 px-3 pb-4">
 			<div class="space-y-2 font-medium">
-				<a href="/app" class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2">
+				<a href="/app" class="flex items-center rounded-lg p-2 text-base-content hover:bg-base-100">
 					<House />
 				</a>
 				<a
 					href="/app/albums"
-					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+					class="flex items-center rounded-lg p-2 text-base-content hover:bg-base-100"
 				>
 					<Music />
 				</a>
 				<a
 					href="/app/video"
-					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+					class="flex items-center rounded-lg p-2 text-base-content hover:bg-base-100"
 				>
 					<FileVideo />
 				</a>
 				<a
 					href="/app/file"
-					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+					class="flex items-center rounded-lg p-2 text-base-content hover:bg-base-100"
 				>
 					<File />
 				</a>
@@ -115,7 +115,7 @@
 			<div class="mt-auto pt-4">
 				<a
 					href="/app/setting"
-					class="text-base-content hover:bg-base-100 flex items-center rounded-lg p-2"
+					class="flex items-center rounded-lg p-2 text-base-content hover:bg-base-100"
 				>
 					<Settings2 />
 				</a>

@@ -1,32 +1,32 @@
 <script lang="ts">
-	import { Play } from 'lucide-svelte';
-	import type { PageData } from './$types';
-	import { getContext } from 'svelte';
-	import type { MusicTrack } from '$lib/types';
-	import Album from '$lib/image/album.svelte';
+	import { Play } from 'lucide-svelte'
+	import type { PageData } from './$types'
+	import { getContext } from 'svelte'
+	import type { MusicTrack } from '$lib/types'
+	import Album from '$lib/image/album.svelte'
 
-	export let data: PageData;
-	const { album } = data;
-	const playMusic = getContext<(track: MusicTrack) => void>('playMusic');
-	const playMusiclist = getContext<(track: MusicTrack) => void>('playMusiclist');
+	export let data: PageData
+	const { album } = data
+	const playMusic = getContext<(track: MusicTrack) => void>('playMusic')
+	const playMusiclist = getContext<(track: MusicTrack) => void>('playMusiclist')
 
 	function getCoverArtUrl(coverArt: string) {
-		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`;
+		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`
 	}
 
 	function formatDuration(seconds: number) {
-		const minutes = Math.floor(seconds / 60);
-		const remainingSeconds = seconds % 60;
-		return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+		const minutes = Math.floor(seconds / 60)
+		const remainingSeconds = seconds % 60
+		return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 	}
 
 	function playAlbum() {
-		playMusiclist(album.tracks);
+		playMusiclist(album.tracks)
 	}
 </script>
 
 <svelte:head>
-  <title>{album.title} - Lithium Player</title>
+	<title>{album.title} - Lithium Player</title>
 </svelte:head>
 
 <div class="p-6">
@@ -60,7 +60,7 @@
 					<tr class="hover">
 						<td class="w-12">{i + 1}</td>
 						<td class="w-12">
-							<button class="btn btn-ghost btn-sm btn-circle" on:click={() => playMusic(track)}>
+							<button class="btn btn-circle btn-ghost btn-sm" on:click={() => playMusic(track)}>
 								<Play size={16} />
 							</button>
 						</td>

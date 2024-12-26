@@ -1,57 +1,57 @@
 <script lang="ts">
-	export let data;
-	import type { Filei } from '$lib/types';
-	import { FileText, FileImage, FileMusic, FileVideo, File } from 'lucide-svelte';
-	import FilePreview from '$lib/components/Filepreview.svelte';
-	import { onMount } from 'svelte';
+	export let data
+	import type { Filei } from '$lib/types'
+	import { FileText, FileImage, FileMusic, FileVideo, File } from 'lucide-svelte'
+	import FilePreview from '$lib/components/Filepreview.svelte'
+	import { onMount } from 'svelte'
 
-	const { files, error, status } = data;
+	const { files, error, status } = data
 
 	function getFileIcon(format: string) {
 		switch (format.toLowerCase()) {
 			case 'image':
-				return FileImage;
+				return FileImage
 			case 'audio':
-				return FileMusic;
+				return FileMusic
 			case 'video':
-				return FileVideo;
+				return FileVideo
 			case 'text':
-				return FileText;
+				return FileText
 			default:
-				return File;
+				return File
 		}
 	}
 
 	function formatFileSize(bytes: number) {
-		const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-		if (bytes === 0) return '0 Byte';
-		const i = Math.floor(Math.log(bytes) / Math.log(1024));
-		return Math.round(bytes / Math.pow(1024, i)) + ' ' + sizes[i];
+		const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+		if (bytes === 0) return '0 Byte'
+		const i = Math.floor(Math.log(bytes) / Math.log(1024))
+		return Math.round(bytes / Math.pow(1024, i)) + ' ' + sizes[i]
 	}
-	let showPreview = false;
-	let selectedFile: Filei | null = null;
+	let showPreview = false
+	let selectedFile: Filei | null = null
 
 	function openPreview(file: Filei) {
-		selectedFile = file;
-		showPreview = true;
+		selectedFile = file
+		showPreview = true
 	}
 
 	function handelEsc(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
-			showPreview = false;
+			showPreview = false
 		}
 	}
 
 	onMount(() => {
-		window.addEventListener('keydown', handelEsc);
+		window.addEventListener('keydown', handelEsc)
 		return () => {
-			window.removeEventListener('keydown', handelEsc);
-		};
-	});
+			window.removeEventListener('keydown', handelEsc)
+		}
+	})
 </script>
 
 <svelte:head>
-  <title>檔案 - Lithium Player</title>
+	<title>檔案 - Lithium Player</title>
 </svelte:head>
 
 {#if showPreview && selectedFile !== null}
@@ -64,7 +64,7 @@
 {/if}
 
 {#if error}
-	<div class="text-error flex flex-col items-center justify-center p-8">
+	<div class="flex flex-col items-center justify-center p-8 text-error">
 		<h2 class="mb-4 text-2xl font-bold">載入失敗</h2>
 		<p class="text-lg">{error}</p>
 		{#if status === 500}
@@ -79,11 +79,11 @@
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
-				class="bg-base-200 overflow-hidden rounded-lg shadow-lg transition-shadow hover:shadow-xl"
+				class="overflow-hidden rounded-lg bg-base-200 shadow-lg transition-shadow hover:shadow-xl"
 				onclick={() => openPreview(file)}
 			>
 				<div
-					class="bg-base-200 overflow-hidden rounded-lg shadow-lg transition-shadow hover:shadow-xl"
+					class="overflow-hidden rounded-lg bg-base-200 shadow-lg transition-shadow hover:shadow-xl"
 				>
 					<div class="group relative flex items-center justify-center p-6">
 						<svelte:component

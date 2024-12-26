@@ -1,40 +1,40 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount } from 'svelte'
 
-	export let filePath: string;
-	export let fileType: string;
-	export let fileId: number;
-	export let onClose: () => void;
+	export let filePath: string
+	export let fileType: string
+	export let fileId: number
+	export let onClose: () => void
 
-	let content: string = '';
-	let loading: boolean = true;
-	let error: string = '';
+	let content: string = ''
+	let loading: boolean = true
+	let error: string = ''
 
 	async function loadFile() {
 		try {
-			const response = await fetch(`http://localhost:8000/stream/file/${fileId}`);
-			if (!response.ok) throw new Error('檔案載入失敗');
+			const response = await fetch(`http://localhost:8000/stream/file/${fileId}`)
+			if (!response.ok) throw new Error('檔案載入失敗')
 
 			if (fileType === 'txt') {
-				content = await response.text();
+				content = await response.text()
 			} else {
-				content = URL.createObjectURL(await response.blob());
+				content = URL.createObjectURL(await response.blob())
 			}
 		} catch (e) {
-			error = (e as Error).message;
+			error = (e as Error).message
 		} finally {
-			loading = false;
+			loading = false
 		}
 	}
 
 	onMount(() => {
-		loadFile();
+		loadFile()
 		return () => {
 			if (content && fileType !== 'txt') {
-				URL.revokeObjectURL(content);
+				URL.revokeObjectURL(content)
 			}
-		};
-	});
+		}
+	})
 </script>
 
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -45,7 +45,7 @@
 					<div class="loading-spinner text-primary">載入中...</div>
 				</div>
 			{:else if error}
-				<div class="text-error flex flex-1 items-center justify-center">
+				<div class="flex flex-1 items-center justify-center text-error">
 					<p>{error}</p>
 				</div>
 			{:else}

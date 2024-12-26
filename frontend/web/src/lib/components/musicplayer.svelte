@@ -1,10 +1,10 @@
 <script lang="ts">
-	import 'vidstack/bundle';
-	import 'vidstack/player';
-	import 'vidstack/player/layouts/default';
-	import 'vidstack/player/ui';
-	import type { MediaPlayerElement } from 'vidstack/elements';
-	let player = $state<MediaPlayerElement | null>(null);
+	import 'vidstack/bundle'
+	import 'vidstack/player'
+	import 'vidstack/player/layouts/default'
+	import 'vidstack/player/ui'
+	import type { MediaPlayerElement } from 'vidstack/elements'
+	let player = $state<MediaPlayerElement | null>(null)
 </script>
 
 <media-player

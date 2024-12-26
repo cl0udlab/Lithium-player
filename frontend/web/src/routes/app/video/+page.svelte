@@ -1,38 +1,38 @@
 <script lang="ts">
-	import type { PageData } from './$types';
-	import { getContext } from 'svelte';
-	import type { Video } from '$lib/types';
-	import { Play } from 'lucide-svelte';
+	import type { PageData } from './$types'
+	import { getContext } from 'svelte'
+	import type { Video } from '$lib/types'
+	import { Play } from 'lucide-svelte'
 
-	export let data;
-	const { videos, error, status } = data;
-	const playVideo = getContext<(video: Video) => void>('playVideo');
+	export let data
+	const { videos, error, status } = data
+	const playVideo = getContext<(video: Video) => void>('playVideo')
 
 	function handlePlay(video: Video) {
-		playVideo(video);
+		playVideo(video)
 	}
 
 	function getDuration(seconds: number) {
-		const hours = Math.floor(seconds / 3600);
-		const minutes = Math.floor((seconds % 3600) / 60);
-		const remainingSeconds = Math.floor(seconds % 60);
+		const hours = Math.floor(seconds / 3600)
+		const minutes = Math.floor((seconds % 3600) / 60)
+		const remainingSeconds = Math.floor(seconds % 60)
 
 		if (hours > 0) {
-			return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+			return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
 		}
-		return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+		return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 	}
 	function getCoverArtUrl(coverArt: string) {
-		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`;
+		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`
 	}
 </script>
 
 <svelte:head>
-  <title>影片 - Lithium Player</title>
+	<title>影片 - Lithium Player</title>
 </svelte:head>
 
 {#if error}
-	<div class="text-error flex flex-col items-center justify-center p-8">
+	<div class="flex flex-col items-center justify-center p-8 text-error">
 		<h2 class="mb-4 text-2xl font-bold">載入失敗</h2>
 		<p class="text-lg">{error}</p>
 		{#if status === 500}
@@ -53,7 +53,7 @@
 							class="h-full w-full object-cover"
 						/>
 					{:else}
-						<div class="bg-base-300 h-full w-full"></div>
+						<div class="h-full w-full bg-base-300"></div>
 					{/if}
 					<button class="btn btn-circle btn-primary absolute" onclick={() => handlePlay(video)}>
 						<Play size={24} />

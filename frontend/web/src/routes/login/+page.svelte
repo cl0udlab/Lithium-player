@@ -1,22 +1,22 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { Music } from 'lucide-svelte';
-	import Cookies from 'js-cookie';
+	import { goto } from '$app/navigation'
+	import { Music } from 'lucide-svelte'
+	import Cookies from 'js-cookie'
 
 	interface LoginResponse {
-		access_token: string;
-		refresh_token: string;
-		token_type: string;
+		access_token: string
+		refresh_token: string
+		token_type: string
 	}
 
-	let username = '';
-	let password = '';
-	let error = '';
+	let username = ''
+	let password = ''
+	let error = ''
 
 	async function handleSubmit() {
 		if (!username || !password) {
-			error = '請填寫所有欄位';
-			return;
+			error = '請填寫所有欄位'
+			return
 		}
 
 		try {
@@ -26,38 +26,38 @@
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({ username, password })
-			});
+			})
 
 			if (!response.ok) {
-				const data = await response.json();
-				error = data.detail || '登入失敗';
-				return;
+				const data = await response.json()
+				error = data.detail || '登入失敗'
+				return
 			}
 
-			const data: LoginResponse = await response.json();
-			Cookies.set('access_token', data.access_token);
-			Cookies.set('refresh_token', data.refresh_token);
+			const data: LoginResponse = await response.json()
+			Cookies.set('access_token', data.access_token)
+			Cookies.set('refresh_token', data.refresh_token)
 
-			await goto('/app');
+			await goto('/app')
 		} catch (err) {
-			error = '伺服器連接失敗';
+			error = '伺服器連接失敗'
 		}
 	}
 </script>
 
 <svelte:head>
-  <title>登入 - Lithium Player</title>
+	<title>登入 - Lithium Player</title>
 </svelte:head>
 
-<div class="bg-base-200 flex min-h-screen items-center justify-center p-4">
-	<div class="card bg-base-100 hover:shadow-3xl w-96 shadow-2xl transition-shadow duration-300">
+<div class="flex min-h-screen items-center justify-center bg-base-200 p-4">
+	<div class="hover:shadow-3xl card w-96 bg-base-100 shadow-2xl transition-shadow duration-300">
 		<div class="card-body p-8">
 			<div class="mb-8 flex flex-col items-center">
-				<div class="bg-primary text-primary-content mb-4 rounded-full p-4">
+				<div class="mb-4 rounded-full bg-primary p-4 text-primary-content">
 					<Music size={32} />
 				</div>
 				<h2 class="card-title text-3xl font-bold">Lithium Player</h2>
-				<p class="text-base-content/60 mt-2">歡迎回來，請登入您的帳號</p>
+				<p class="mt-2 text-base-content/60">歡迎回來，請登入您的帳號</p>
 			</div>
 
 			{#if error}
@@ -89,7 +89,7 @@
 						type="text"
 						bind:value={username}
 						placeholder="請輸入用戶名"
-						class="input input-bordered focus:input-primary w-full transition-colors"
+						class="input input-bordered w-full transition-colors focus:input-primary"
 					/>
 				</div>
 
@@ -101,7 +101,7 @@
 						type="password"
 						bind:value={password}
 						placeholder="請輸入密碼"
-						class="input input-bordered focus:input-primary w-full transition-colors"
+						class="input input-bordered w-full transition-colors focus:input-primary"
 					/>
 				</div>
 

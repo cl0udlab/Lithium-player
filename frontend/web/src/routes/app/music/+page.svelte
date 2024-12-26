@@ -1,27 +1,27 @@
 <script lang="ts">
-	export let data;
-	import { getContext } from 'svelte';
-	import type { MusicTrack } from '$lib/types';
-	import { Play } from 'lucide-svelte';
-  import CD from '$lib/image/cd.svelte';
-	const { musics, error, status } = data;
-	const playMusic = getContext<(track: MusicTrack) => void>('playMusic');
+	export let data
+	import { getContext } from 'svelte'
+	import type { MusicTrack } from '$lib/types'
+	import { Play } from 'lucide-svelte'
+	import CD from '$lib/image/cd.svelte'
+	const { musics, error, status } = data
+	const playMusic = getContext<(track: MusicTrack) => void>('playMusic')
 
 	function handlePlay(track: MusicTrack) {
-		playMusic(track);
+		playMusic(track)
 	}
 
 	function getCoverArtUrl(coverArt: string) {
-		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`;
+		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`
 	}
 </script>
 
 <svelte:head>
-  <title>音樂 - Lithium Player</title>
+	<title>音樂 - Lithium Player</title>
 </svelte:head>
 
 {#if error}
-	<div class="text-error flex flex-col items-center justify-center p-8">
+	<div class="flex flex-col items-center justify-center p-8 text-error">
 		<h2 class="mb-4 text-2xl font-bold">載入失敗</h2>
 		<p class="text-lg">{error}</p>
 		{#if status === 500}
@@ -34,7 +34,7 @@
 	<div class="grid grid-cols-1 gap-5 p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
 		{#each musics as music}
 			<div
-				class="bg-base-200 overflow-hidden rounded-lg shadow-lg transition-shadow hover:shadow-xl"
+				class="overflow-hidden rounded-lg bg-base-200 shadow-lg transition-shadow hover:shadow-xl"
 			>
 				<div class="group relative">
 					{#if music.cover_art}

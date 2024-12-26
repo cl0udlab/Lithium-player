@@ -1,146 +1,146 @@
 <script lang="ts">
-	import { on } from 'svelte/events';
-	import type { PageData } from './$types';
-	import { Folder, File } from 'lucide-svelte';
-	let { data }: { data: PageData } = $props();
+	import { on } from 'svelte/events'
+	import type { PageData } from './$types'
+	import { Folder, File } from 'lucide-svelte'
+	let { data }: { data: PageData } = $props()
 
 	interface DirectoryContent {
-		files: string[];
-		dirs: string[];
-		path: string;
-		error: string | null;
+		files: string[]
+		dirs: string[]
+		path: string
+		error: string | null
 	}
 
-	let isModalOpen = $state(false);
-	let currentPath = $state('/');
-	let files = $state<string[]>([]);
-	let dirs = $state<string[]>([]);
-	let error = $state<string | null>(null);
-	let activeTab = $state('directory');
-	let scanStatus = $state<string | null>(null);
+	let isModalOpen = $state(false)
+	let currentPath = $state('/')
+	let files = $state<string[]>([])
+	let dirs = $state<string[]>([])
+	let error = $state<string | null>(null)
+	let activeTab = $state('directory')
+	let scanStatus = $state<string | null>(null)
 
 	function handlePathInput() {
 		if (currentPath) {
-			fetchDirs(currentPath);
+			fetchDirs(currentPath)
 		}
 	}
 	async function fetchDirs(path: string) {
 		try {
 			const response = await fetch(
 				`http://localhost:8000/setting/dir?path=${encodeURIComponent(path)}`
-			);
-			const data: DirectoryContent = await response.json();
+			)
+			const data: DirectoryContent = await response.json()
 
 			if (data.error) {
-				error = data.error;
-				return;
+				error = data.error
+				return
 			}
 
-			files = data.files;
-			dirs = data.dirs;
-			currentPath = data.path;
-			error = null;
+			files = data.files
+			dirs = data.dirs
+			currentPath = data.path
+			error = null
 		} catch (err) {
-			error = '取得目錄失敗';
+			error = '取得目錄失敗'
 		}
 	}
 
 	function handleDirClick(dir: string) {
-		const newPath = currentPath === '/' ? `/${dir}` : `${currentPath}/${dir}`;
-		fetchDirs(newPath);
+		const newPath = currentPath === '/' ? `/${dir}` : `${currentPath}/${dir}`
+		fetchDirs(newPath)
 	}
 	function handleFileClick(file: string) {
-		const newPath = currentPath === '/' ? `/${file}` : `${currentPath}/${file}`;
-		currentPath = newPath;
+		const newPath = currentPath === '/' ? `/${file}` : `${currentPath}/${file}`
+		currentPath = newPath
 	}
 
 	function openModal() {
-		isModalOpen = true;
-		fetchDirs('/');
+		isModalOpen = true
+		fetchDirs('/')
 	}
 
 	function closeModal() {
-		isModalOpen = false;
-		currentPath = '/';
-		dirs = [];
-		error = null;
+		isModalOpen = false
+		currentPath = '/'
+		dirs = []
+		error = null
 	}
 
 	function handleSelect() {
-		console.log('selected path:', currentPath);
-		closeModal();
+		console.log('selected path:', currentPath)
+		closeModal()
 	}
 	async function handleScan() {
 		try {
-			scanStatus = '掃描中...';
+			scanStatus = '掃描中...'
 			const response = await fetch(`http://localhost:8000/file/parse_file`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({ file_path: currentPath })
-			});
+			})
 
-			const data = await response.json();
+			const data = await response.json()
 			if (response.status === 400) {
-				error = data.detail;
-				scanStatus = data.detail;
+				error = data.detail
+				scanStatus = data.detail
 				setTimeout(() => {
-					scanStatus = null;
-				}, 3000);
-				return;
+					scanStatus = null
+				}, 3000)
+				return
 			}
 
-			console.log('掃描結果:', data);
-			scanStatus = '掃描完成';
+			console.log('掃描結果:', data)
+			scanStatus = '掃描完成'
 			setTimeout(() => {
-				scanStatus = null;
-			}, 3000);
+				scanStatus = null
+			}, 3000)
 		} catch (err) {
-			error = '掃描失敗';
-			scanStatus = null;
+			error = '掃描失敗'
+			scanStatus = null
 		}
 	}
 
 	async function handleScanDir() {
 		try {
-			scanStatus = '掃描中...';
+			scanStatus = '掃描中...'
 			const response = await fetch(`http://localhost:8000/file/scanall`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({ file_path: currentPath })
-			});
+			})
 
-			const data = await response.json();
+			const data = await response.json()
 			if (response.status === 400) {
-				error = data.detail;
-				scanStatus = data.detail;
+				error = data.detail
+				scanStatus = data.detail
 				setTimeout(() => {
-					scanStatus = null;
-				}, 3000);
-				return;
+					scanStatus = null
+				}, 3000)
+				return
 			}
 
-			console.log('掃描結果:', data);
-			scanStatus = '掃描完成';
+			console.log('掃描結果:', data)
+			scanStatus = '掃描完成'
 			setTimeout(() => {
-				scanStatus = null;
-			}, 3000);
+				scanStatus = null
+			}, 3000)
 		} catch (err) {
-			error = '掃描失敗';
-			scanStatus = null;
+			error = '掃描失敗'
+			scanStatus = null
 		}
 	}
 
 	function handleTabChange(tab: string) {
-		activeTab = tab;
+		activeTab = tab
 	}
 </script>
 
 <svelte:head>
-  <title>設定 - Lithium Player</title>
+	<title>設定 - Lithium Player</title>
 </svelte:head>
 
 <div class="p-4">
@@ -163,7 +163,7 @@
 <dialog class="modal" class:modal-open={isModalOpen}>
 	<div class="modal-box">
 		<h3 class="mb-4 text-lg font-bold">掃描目錄</h3>
-		<div class="tabs tabs-boxed mb-4">
+		<div class="tabs-boxed tabs mb-4">
 			<button
 				class="tab"
 				class:tab-active={activeTab === 'directory'}
@@ -204,8 +204,8 @@
 						<a
 							href="#"
 							onclick={(e) => {
-								e.preventDefault();
-								fetchDirs('/');
+								e.preventDefault()
+								fetchDirs('/')
 							}}
 						>
 							根目錄
@@ -217,15 +217,15 @@
 								<a
 									href="#"
 									onclick={(e) => {
-										e.preventDefault();
+										e.preventDefault()
 										const path =
 											'/' +
 											currentPath
 												.split('/')
 												.filter(Boolean)
 												.slice(0, index + 1)
-												.join('/');
-										fetchDirs(path);
+												.join('/')
+										fetchDirs(path)
 									}}
 								>
 									{part}
@@ -236,12 +236,12 @@
 				</ul>
 			</div>
 			<div class="max-h-96 overflow-y-auto">
-				<table class="table-zebra table">
+				<table class="table table-zebra">
 					<tbody> </tbody><tbody>
 						{#each dirs as dir}
 							<tr class="hover cursor-pointer" onclick={() => handleDirClick(dir)}>
 								<td>
-									<Folder size={20} class="text-primary mr-2 inline" />
+									<Folder size={20} class="mr-2 inline text-primary" />
 									{dir}
 								</td>
 							</tr>
@@ -273,8 +273,8 @@
 							<a
 								href="#"
 								onclick={(e) => {
-									e.preventDefault();
-									fetchDirs('/');
+									e.preventDefault()
+									fetchDirs('/')
 								}}
 							>
 								根目錄
@@ -286,15 +286,15 @@
 									<a
 										href="#"
 										onclick={(e) => {
-											e.preventDefault();
+											e.preventDefault()
 											const path =
 												'/' +
 												currentPath
 													.split('/')
 													.filter(Boolean)
 													.slice(0, index + 1)
-													.join('/');
-											fetchDirs(path);
+													.join('/')
+											fetchDirs(path)
 										}}
 									>
 										{part}
@@ -310,12 +310,12 @@
 					</div>
 				{/if}
 				<div class="max-h-96 overflow-y-auto">
-					<table class="table-zebra table">
+					<table class="table table-zebra">
 						<tbody>
 							{#each dirs as dir}
 								<tr class="hover cursor-pointer" onclick={() => handleDirClick(dir)}>
 									<td>
-										<Folder size={20} class="text-primary mr-2 inline" />
+										<Folder size={20} class="mr-2 inline text-primary" />
 										{dir}
 									</td>
 								</tr>
@@ -323,7 +323,7 @@
 							{#each files as file}
 								<tr class="hover" onclick={() => handleFileClick(file)}>
 									<td>
-										<File size={20} class="text-secondary mr-2 inline" />
+										<File size={20} class="mr-2 inline text-secondary" />
 										{file}
 									</td>
 								</tr>
@@ -334,7 +334,11 @@
 			</div>
 			<div class="modal-action">
 				<button class="btn btn-ghost" onclick={closeModal}>取消</button>
-				<button class="btn btn-primary" onclick={handleScanDir} disabled={scanStatus === '掃描中...'}>
+				<button
+					class="btn btn-primary"
+					onclick={handleScanDir}
+					disabled={scanStatus === '掃描中...'}
+				>
 					{scanStatus === '掃描中...' ? '掃描中...' : '開始掃描'}
 				</button>
 			</div>

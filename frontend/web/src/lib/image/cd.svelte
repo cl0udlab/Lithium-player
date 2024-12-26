@@ -1,11 +1,11 @@
 <script lang="ts">
-	let className = '';
-	export { className as class };
+	let className = ''
+	export { className as class }
 </script>
 
 <div class="flex items-center justify-center {className}">
 	<svg
-		class="text-base-content h-full w-full fill-current"
+		class="h-full w-full fill-current text-base-content"
 		enable-background="new 0 0 72 72"
 		viewBox="0 0 72 72"
 		xmlns="http://www.w3.org/2000/svg"
