@@ -207,7 +207,6 @@ async def parse_one_file(request: FilePathRequest):
         data = sync_one_file(Path(request.file_path))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    print(data)
     return data
 
 

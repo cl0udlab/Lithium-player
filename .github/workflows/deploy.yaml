@@ -10,6 +10,7 @@ env:
   REGISTRY: docker.io
   BACKEND_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/lithium-player-backend
   FRONTEND_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/lithium-player-frontend
+  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
   build-and-push:
@@ -30,6 +31,8 @@ jobs:
           push: true
           tags: |
             ${{ env.BACKEND_IMAGE_NAME }}:latest
+            ${{ env.FRONTEND_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
       - name: copy pnpm-lock
         run: cp -r pnpm-lock.yaml ./frontend/web/pnpm-lock.yaml
       - name: Build and push Frontend
@@ -39,3 +42,4 @@ jobs:
           push: true
           tags: |
             ${{ env.FRONTEND_IMAGE_NAME }}:latest
+            ${{ env.FRONTEND_IMAGE_NAME }}:${{ env.IMAGE_TAG }}

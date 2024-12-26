@@ -27,7 +27,6 @@ async def register(register_data: RegisterRequest, session: SessionDep):
         select(User).where(User.username == register_data.username)
     ).first()
     if user:
-        print(user)
         raise HTTPException(status_code=400, detail="Username already registered")
     try:
         user = User(
@@ -49,7 +48,7 @@ async def login(login_data: LoginRequest, session: SessionDep):
     user: User = session.exec(select(User).where(User.username == login_data.username)).first()
     if user is None or not verify_password(login_data.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid credentials")
-    return create_tokens(user.id)
+    return create_tokens(user)
 
 
 @auth_router.post("/refresh", response_model=Token)
