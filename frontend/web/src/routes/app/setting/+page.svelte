@@ -66,10 +66,6 @@
 		error = null
 	}
 
-	function handleSelect() {
-		console.log('selected path:', currentPath)
-		closeModal()
-	}
 	async function handleScan() {
 		try {
 			scanStatus = '掃描中...'
@@ -185,7 +181,6 @@
 			</div>
 		{/if}
 		{#if activeTab === 'directory'}
-			<!-- 原有的目錄選擇介面 -->
 			<div class="form-control mb-4">
 				<div class="input-group flex flex-row">
 					<input
@@ -236,12 +231,12 @@
 				</ul>
 			</div>
 			<div class="max-h-96 overflow-y-auto">
-				<table class="table table-zebra">
+				<table class="table-zebra table">
 					<tbody> </tbody><tbody>
 						{#each dirs as dir}
 							<tr class="hover cursor-pointer" onclick={() => handleDirClick(dir)}>
 								<td>
-									<Folder size={20} class="mr-2 inline text-primary" />
+									<Folder size={20} class="text-primary mr-2 inline" />
 									{dir}
 								</td>
 							</tr>
@@ -251,7 +246,7 @@
 			</div>
 			<div class="modal-action">
 				<button class="btn btn-ghost" onclick={closeModal}>取消</button>
-				<button class="btn btn-primary" onclick={handleSelect}>開始掃描</button>
+				<button class="btn btn-primary" onclick={handleScanDir}>開始掃描</button>
 			</div>
 		{:else}
 			<div class="form-control">
@@ -310,12 +305,12 @@
 					</div>
 				{/if}
 				<div class="max-h-96 overflow-y-auto">
-					<table class="table table-zebra">
+					<table class="table-zebra table">
 						<tbody>
 							{#each dirs as dir}
 								<tr class="hover cursor-pointer" onclick={() => handleDirClick(dir)}>
 									<td>
-										<Folder size={20} class="mr-2 inline text-primary" />
+										<Folder size={20} class="text-primary mr-2 inline" />
 										{dir}
 									</td>
 								</tr>
@@ -323,7 +318,7 @@
 							{#each files as file}
 								<tr class="hover" onclick={() => handleFileClick(file)}>
 									<td>
-										<File size={20} class="mr-2 inline text-secondary" />
+										<File size={20} class="text-secondary mr-2 inline" />
 										{file}
 									</td>
 								</tr>
@@ -334,11 +329,7 @@
 			</div>
 			<div class="modal-action">
 				<button class="btn btn-ghost" onclick={closeModal}>取消</button>
-				<button
-					class="btn btn-primary"
-					onclick={handleScanDir}
-					disabled={scanStatus === '掃描中...'}
-				>
+				<button class="btn btn-primary" onclick={handleScan} disabled={scanStatus === '掃描中...'}>
 					{scanStatus === '掃描中...' ? '掃描中...' : '開始掃描'}
 				</button>
 			</div>
