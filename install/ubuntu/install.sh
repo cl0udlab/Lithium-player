@@ -12,4 +12,5 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
 mkdir lithium-player
 cd lithium-player
 curl -o docker-compose.yml https://raw.githubusercontent.com/cl0udlab/Lithium-player/refs/heads/main/docker-compose.yml
+curl -o nginx.conf https://raw.githubusercontent.com/cl0udlab/Lithium-player/refs/heads/main/nginx.conf
 sudo docker compose -f docker-compose.yml up -d

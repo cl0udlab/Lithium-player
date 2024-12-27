@@ -143,7 +143,7 @@ def sync_music_file(metadata: dict, db: Session):
 
 
 def sync_dir_file(dir_path: Path) -> list:
-    db: Session = get_db()
+    db: Session = next(get_db())
     if not dir_path.is_dir():
         raise ValueError("Invalid directory path")
     query = union(select(VideoFile.filepath), select(MusicTrackFile.filepath))
