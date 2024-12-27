@@ -3,6 +3,7 @@
 	import { getContext } from 'svelte'
 	import type { Video } from '$lib/types'
 	import { Play } from 'lucide-svelte'
+  import { APIUrl } from '$lib/api'
 
 	export let data
 	const { videos, error, status } = data
@@ -23,7 +24,7 @@
 		return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 	}
 	function getCoverArtUrl(coverArt: string) {
-		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`
+		return `${APIUrl}/file/image?image_id=${coverArt}&image_size=400`
 	}
 </script>
 

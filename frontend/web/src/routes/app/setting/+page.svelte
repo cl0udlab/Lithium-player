@@ -2,6 +2,8 @@
 	import { on } from 'svelte/events'
 	import type { PageData } from './$types'
 	import { Folder, File } from 'lucide-svelte'
+  import { APIUrl } from '$lib/api'
+
 	let { data }: { data: PageData } = $props()
 
 	interface DirectoryContent {
@@ -27,7 +29,7 @@
 	async function fetchDirs(path: string) {
 		try {
 			const response = await fetch(
-				`http://localhost:8000/setting/dir?path=${encodeURIComponent(path)}`
+				`${APIUrl}/setting/dir?path=${encodeURIComponent(path)}`
 			)
 			const data: DirectoryContent = await response.json()
 
@@ -69,7 +71,7 @@
 	async function handleScan() {
 		try {
 			scanStatus = '掃描中...'
-			const response = await fetch(`http://localhost:8000/file/parse_file`, {
+			const response = await fetch(`${APIUrl}/file/parse_file`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
@@ -101,7 +103,7 @@
 	async function handleScanDir() {
 		try {
 			scanStatus = '掃描中...'
-			const response = await fetch(`http://localhost:8000/file/scanall`, {
+			const response = await fetch(`${APIUrl}/file/scanall`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'

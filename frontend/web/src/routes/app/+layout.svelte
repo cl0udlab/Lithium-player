@@ -20,6 +20,7 @@
 	import type { MusicTrack, Video } from '$lib/types'
 	import Cd from '$lib/image/cd.svelte'
 	import Cookies from 'js-cookie'
+  import { APIUrl } from '$lib/api'
 
 	let player = $state<MediaPlayerElement | null>(null)
 
@@ -77,7 +78,7 @@
 		}
 	})
 	function getCoverArtUrl(coverArt: string) {
-		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=300`
+		return `${APIUrl}/file/image?image_id=${coverArt}&image_size=300`
 	}
 </script>
 

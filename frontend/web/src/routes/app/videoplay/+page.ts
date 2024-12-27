@@ -1,5 +1,6 @@
 import type { PageLoad } from './$types'
 import { error } from '@sveltejs/kit'
+import { APIUrl } from '$lib/api'
 
 export const load: PageLoad = async ({ url, fetch }) => {
 	const videoId = url.searchParams.get('id')
@@ -9,7 +10,7 @@ export const load: PageLoad = async ({ url, fetch }) => {
 	}
 
 	try {
-		const response = await fetch(`http://localhost:8000/file/video?video_id=${videoId}`)
+		const response = await fetch(`${APIUrl}/file/video?video_id=${videoId}`)
 		if (!response.ok) throw new Error('影片載入失敗')
 
 		const video = await response.json()

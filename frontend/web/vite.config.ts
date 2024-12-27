@@ -3,5 +3,10 @@ import { vite as vidstack } from 'vidstack/plugins'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-	plugins: [vidstack(), sveltekit()]
+	plugins: [vidstack(), sveltekit()],
+	server: {
+		proxy: {
+			'/api': 'http://localhost:8000'
+		}
+	}
 })

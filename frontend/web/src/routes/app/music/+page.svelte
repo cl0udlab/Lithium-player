@@ -4,6 +4,7 @@
 	import type { MusicTrack } from '$lib/types'
 	import { Play } from 'lucide-svelte'
 	import CD from '$lib/image/cd.svelte'
+  import { APIUrl } from '$lib/api'
 	const { musics, error, status } = data
 	const playMusic = getContext<(track: MusicTrack) => void>('playMusic')
 
@@ -12,7 +13,7 @@
 	}
 
 	function getCoverArtUrl(coverArt: string) {
-		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`
+		return `${APIUrl}/file/image?image_id=${coverArt}&image_size=400`
 	}
 </script>
 

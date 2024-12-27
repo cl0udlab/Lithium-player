@@ -2,6 +2,7 @@ import { writable } from 'svelte/store'
 import type { MusicTrack, Video } from '$lib/types'
 import type { MediaPlayerElement } from 'vidstack/elements'
 import { playerliststat } from '$lib/stores/playerlist'
+import { APIUrl } from '$lib/api'
 
 interface PlayerState {
 	type: 'video' | 'audio' | null
@@ -50,7 +51,7 @@ function createPlayerState() {
 			return
 		}
 		try {
-			currentState.player.src = `http://localhost:8000/stream/music/${track.id}`
+			currentState.player.src = `${APIUrl}/stream/music/${track.id}`
 			await new Promise<void>((resolve, reject) => {
 				const onCanPlay = () => {
 					currentState.player?.removeEventListener('can-play', onCanPlay)

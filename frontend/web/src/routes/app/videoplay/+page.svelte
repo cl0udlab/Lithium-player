@@ -4,6 +4,7 @@
 	import type { PageData } from './$types'
 	import 'vidstack/bundle'
 	import type { MediaPlayerElement } from 'vidstack/elements'
+  import { APIUrl } from '$lib/api'
 
 	export let data: PageData
 	const { video } = data
@@ -42,7 +43,7 @@
 <div class="fixed inset-0 bg-black">
 	<media-player bind:this={player} class="h-full" autoplay>
 		<media-provider>
-			<source src={`http://localhost:8000/stream/video/${video.id}`} type="video/mp4" />
+			<source src={`${APIUrl}/stream/video/${video.id}`} type="video/mp4" />
 		</media-provider>
 		<media-video-layout>
 			<media-controls></media-controls>

@@ -7,6 +7,7 @@
 	import CD from '$lib/image/cd.svelte'
 	import Album from '$lib/image/album.svelte'
 	import { goto } from '$app/navigation'
+  import { APIUrl } from '$lib/api'
 	export let data
 	const { info, error, status } = data
 
@@ -24,7 +25,7 @@
 		playVideo(video)
 	}
 	function getCoverArtUrl(coverArt: string) {
-		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`
+		return `${APIUrl}/file/image?image_id=${coverArt}&image_size=400`
 	}
 </script>
 

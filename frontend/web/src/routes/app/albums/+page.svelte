@@ -5,13 +5,14 @@
 	import { getContext } from 'svelte'
 	import type { MusicTrack } from '$lib/types'
 	import Album from '$lib/image/album.svelte'
+  import { APIUrl } from '$lib/api'
 
 	export let data: PageData
 	const { albums, error, status } = data
 	const playMusic = getContext<(track: MusicTrack) => void>('playMusic')
 
 	function getCoverArtUrl(coverArt: string) {
-		return `http://localhost:8000/file/image?image_id=${coverArt}&image_size=400`
+		return `${APIUrl}/file/image?image_id=${coverArt}&image_size=400`
 	}
 
 	function playAlbum(album: any) {

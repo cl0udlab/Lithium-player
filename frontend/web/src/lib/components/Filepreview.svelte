@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
+  import { APIUrl } from '$lib/api';
 
 	export let filePath: string
 	export let fileType: string
@@ -12,7 +13,7 @@
 
 	async function loadFile() {
 		try {
-			const response = await fetch(`http://localhost:8000/stream/file/${fileId}`)
+			const response = await fetch(`${APIUrl}/stream/file/${fileId}`)
 			if (!response.ok) throw new Error('檔案載入失敗')
 
 			if (fileType === 'txt') {

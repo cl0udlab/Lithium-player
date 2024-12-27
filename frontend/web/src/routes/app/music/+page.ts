@@ -1,8 +1,9 @@
 import type { PageLoad } from './$types'
+import { APIUrl } from '$lib/api'
 
 export const load = (async ({ fetch }) => {
 	try {
-		const response = await fetch('http://localhost:8000/file/music')
+		const response = await fetch(`${APIUrl}/file/music`)
 
 		if (!response.ok) {
 			return {

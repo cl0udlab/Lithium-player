@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation'
 	import { Music } from 'lucide-svelte'
 	import Cookies from 'js-cookie'
+  import { APIUrl } from '$lib/api';
 
 	interface LoginResponse {
 		access_token: string
@@ -20,7 +21,7 @@
 		}
 
 		try {
-			const response = await fetch('http://localhost:8000/auth/login', {
+			const response = await fetch(`${APIUrl}/auth/login`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
