@@ -6,7 +6,11 @@ export default defineConfig({
 	plugins: [vidstack(), sveltekit()],
 	server: {
 		proxy: {
-			'/api': 'http://localhost:8000'
+			'/api': {
+				target: 'http://localhost:3000',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api/, '')
+			}
 		}
 	}
 })
