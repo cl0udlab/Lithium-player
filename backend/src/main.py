@@ -1,5 +1,7 @@
 from dotenv import load_dotenv
+
 load_dotenv()
+import os
 from db import engine, SQLModel
 from fastapi import FastAPI
 import json
@@ -39,14 +41,18 @@ app.include_router(user_router)
 app.include_router(setting_router)
 logger.info("Server started")
 
+cors = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://localhost",
+    "http://localhost:80",
+    os.getenv("APP_URL"),
+]
+cors = [url for url in cors if url]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "https://localhost",
-        "http://localhost:80",
-    ],
+    allow_origins=cors,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

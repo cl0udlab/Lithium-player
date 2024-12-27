@@ -9,6 +9,28 @@ Lithium Player 是一個現代化的多媒體播放應用程式，支援音樂�
 ```sh
 git clone https://github.com/cl0udlab/Lithium-player
 cd lithium-player
+vim docker-compose.yml # 修改compose文件
+```
+
+```yml
+backend:
+    image: phillychi3/lithium-player-backend:latest
+    container_name: lithium-backend
+    volumes:
+        - backend:/app/data
+        - C:\Users\user\Music:/media # 前面換成自己的音樂目錄
+    ports:
+        - "8000:8000"
+    environment:
+        SQLIP: postgres
+        APP_URL: 前端的網址(如果有的話
+    networks:
+        - lithium-network
+    depends_on:
+        - postgres
+```
+
+```sh
 docker-compose up -d
 ```
 
