@@ -7,6 +7,7 @@ export interface MusicTrack {
 	artist: string
 	album: string
 	cover_art: string
+  lyrics: string
 }
 
 export interface Video {

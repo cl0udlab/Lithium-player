@@ -52,6 +52,14 @@
 									<span class="ms-3">專輯</span>
 								</a>
 							</li>
+							<li>
+								<a
+									href="/app/playlist"
+									class="flex items-center rounded-lg px-2 py-1.5 hover:bg-base-100"
+								>
+									<span class="ms-3">撥放清單</span>
+								</a>
+							</li>
 						</ul>
 					</div>
 				</div>

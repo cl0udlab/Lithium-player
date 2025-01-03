@@ -221,14 +221,59 @@ async def scan_all_files(request: FilePathRequest):
             sync_dir_file(dir.path)
 
 
+@file_router.get("/searchmusic")
+async def search_musics(name: str, session: SessionDep):
+    """搜尋音樂"""
+    musics = select(
+        MusicTrack.id,
+        MusicTrack.title,
+        MusicTrack.artist,
+        MusicTrack.album,
+        literal("music").label("type"),
+    ).where(
+        or_(
+            MusicTrack.title.ilike(f"%{name}%"),
+            MusicTrack.artist.ilike(f"%{name}%"),
+            MusicTrack.album.ilike(f"%{name}%"),
+        )
+    )
+
+    stream_tracks = select(
+        StreamTrack.id,
+        StreamTrack.title,
+        StreamTrack.artist,
+        literal("stream").label("type"),
+    ).where(
+        or_(
+            StreamTrack.title.ilike(f"%{name}%"),
+            StreamTrack.artist.ilike(f"%{name}%"),
+        )
+    )
+
+    musics = session.exec(musics).all()
+    stream_tracks = session.exec(stream_tracks).all()
+
+    return {
+        "musics": [
+            {"id": m.id, "title": m.title, "artist": m.artist, "type": m.type}
+            for m in musics
+        ],
+        "stream_tracks": [
+            {"id": s.id, "title": s.title, "artist": s.artist, "type": s.type}
+            for s in stream_tracks
+        ],
+    }
+
+
 @file_router.get("/search")
 async def search_files(name: str, session: SessionDep):
     """搜尋"""
     videos = select(
-        Video.title, Video.description, literal("video").label("type")
+        Video.id, Video.title, Video.description, literal("video").label("type")
     ).where(or_(Video.title.ilike(f"%{name}%"), Video.description.ilike(f"%{name}%")))
 
     musics = select(
+        MusicTrack.id,
         MusicTrack.title,
         MusicTrack.artist,
         MusicTrack.album,
@@ -242,7 +287,7 @@ async def search_files(name: str, session: SessionDep):
     )
 
     albums = select(
-        Album.title, Album.album_artist, literal("album").label("type")
+        Album.id, Album.title, Album.album_artist, literal("album").label("type")
     ).where(
         or_(
             Album.title.ilike(f"%{name}%"),

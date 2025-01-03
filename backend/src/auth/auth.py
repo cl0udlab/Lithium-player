@@ -28,7 +28,8 @@ def get_password_hash(password: str) -> str:
 
 def get_user_from_db(userid: str) -> User:
     """get user by id"""
-    user = get_db().exec(select(User).where(User.id == userid)).first()
+    db = next(get_db())
+    user = db.exec(select(User).where(User.id == userid)).first()
     return user
 
 

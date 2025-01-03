@@ -8,6 +8,7 @@ interface PlayerState {
 	type: 'video' | 'audio' | null
 	isPlaying: boolean
 	currentTrack: MusicTrack | Video | null
+	currentTime: number
 	src: string | null
 	player: MediaPlayerElement | null
 	isExpanded: boolean
@@ -17,6 +18,7 @@ const initialState: PlayerState = {
 	type: null,
 	isPlaying: false,
 	currentTrack: null,
+	currentTime: 0,
 	src: null,
 	player: null,
 	isExpanded: false
@@ -63,6 +65,13 @@ function createPlayerState() {
 				}
 				currentState.player?.addEventListener('can-play', onCanPlay)
 				currentState.player?.addEventListener('error', onError)
+			})
+			currentState.player.addEventListener('time-update', () => {
+				const currentTime = currentState.player?.currentTime || 0
+				update((state) => ({
+					...state,
+					currentTime
+				}))
 			})
 			currentState.player.addEventListener('ended', async () => {
 				console.log('播放結束')
@@ -116,6 +125,14 @@ function createPlayerState() {
 					state.player.pause()
 				}
 				return { ...state, isPlaying: false }
+			}),
+		getCurrentTime: () => currentState.currentTime,
+		setCurrentTime: (time: number) =>
+			update((state) => {
+				if (state.player) {
+					state.player.currentTime = time
+				}
+				return { ...state, currentTime: time }
 			})
 	}
 }

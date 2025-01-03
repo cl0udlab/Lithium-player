@@ -6,6 +6,7 @@
 	import { goto } from '$app/navigation'
 	import Navbar from '$lib/components/navbar.svelte'
 	import Sidebar from '$lib/components/sidebar.svelte'
+	import Lyrics from '$lib/components/lyrics.svelte'
 	import 'vidstack/player/styles/default/theme.css'
 	import 'vidstack/player/styles/default/layouts/audio.css'
 	import 'vidstack/player/styles/default/layouts/video.css'
@@ -20,7 +21,7 @@
 	import type { MusicTrack, Video } from '$lib/types'
 	import Cd from '$lib/image/cd.svelte'
 	import Cookies from 'js-cookie'
-  import { APIUrl } from '$lib/api'
+	import { APIUrl } from '$lib/api'
 
 	let player = $state<MediaPlayerElement | null>(null)
 
@@ -95,7 +96,7 @@
 		</main>
 
 		<div
-			class={`fixed left-0 right-0 flex w-full flex-col bg-base-100 transition-all duration-300 ${$playerState.isExpanded ? 'bottom0 top-20' : 'bottom-0 h-24'} ${$isExpanded ? 'pl-64' : 'pl-16'} ${$playerState.isPlaying ? '' : 'hidden'}`}
+			class={`bg-base-100 fixed left-0 right-0 flex w-full flex-col transition-all duration-300 ${$playerState.isExpanded ? 'bottom0 top-20' : 'bottom-0 h-24'} ${$isExpanded ? 'pl-64' : 'pl-16'} ${$playerState.isPlaying ? '' : 'hidden'}`}
 		>
 			<div class="h-full w-full flex-1">
 				<media-player
@@ -111,7 +112,7 @@
 					{#if $playerState.isExpanded}
 						<div class="h-[calc(100%-6rem)] p-4">
 							<div class="grid h-full grid-cols-2 gap-8">
-								<div class="rounded-lgp-4 w-72 bg-base-300 p-4 shadow-lg">
+								<div class="rounded-lgp-4 bg-base-300 w-72 p-4 shadow-lg">
 									{#if $playerState.currentTrack?.cover_art}
 										<img
 											src={getCoverArtUrl($playerState.currentTrack?.cover_art)}
@@ -125,11 +126,15 @@
 									<div class="mb-3 text-sm text-gray-600">{$playerState.currentTrack?.artist}</div>
 									<media-audio-layout> </media-audio-layout>
 								</div>
-								<div class="flex-1">
-									<div class="space-y-2 text-lg">
-										<div>placeholder1</div>
-										<div class="bg-black py-1 text-white">placeholder2</div>
-									</div>
+								<div class="flex-1" id="lyrics">
+									{#if $playerState.currentTrack?.lyrics}
+										<Lyrics
+											lyrics={$playerState.currentTrack.lyrics}
+											currentTime={$playerState.currentTime}
+										/>
+									{:else}
+										<div class="text-center text-gray-500">無歌詞</div>
+									{/if}
 								</div>
 								<div class="flex flex-col">
 									<button class="btn btn-ghost" onclick={togglePlayer}>
