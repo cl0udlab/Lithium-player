@@ -15,7 +15,7 @@ from models import (
     AnimeSeries,
     AnimeTag,
 )
-from core.logger import logging
+from core.logger import logger
 
 
 def sync_text_file(metadata: dict, db: Session):
@@ -43,7 +43,8 @@ def sync_text_file(metadata: dict, db: Session):
 def sync_video_file(metadata: dict, db: Session):
     """同步影片檔案到資料庫"""
     try:
-        logging.debug(f"Syncing video file: {metadata}")
+        logger.debug(f"Syncing video file: {metadata}")
+        logger.info(f"Syncing video file: {metadata}")
         video_file = VideoFile(
             filename=metadata.get("filename"),
             filepath=metadata.get("file_path"),
@@ -56,13 +57,13 @@ def sync_video_file(metadata: dict, db: Session):
         )
 
         anime = None
-        if metadata.get("isanime") and metadata.get("anime"):
+        if metadata.get("isanime"):
             anime = db.exec(
-                select(AnimeSeries).where(AnimeSeries.title == metadata["anime"])
+                select(AnimeSeries).where(AnimeSeries.title == metadata["title"])
             ).first()
             if not anime:
                 anime = AnimeSeries(
-                    title=metadata["anime"],
+                    title=metadata["title"],
                     description=metadata.get("description"),
                     season_number=metadata.get("season_number", 1),
                     release_date=metadata.get("date"),
@@ -77,7 +78,9 @@ def sync_video_file(metadata: dict, db: Session):
                         anime.tags.append(anime_tag)
 
         video = Video(
-            title=metadata.get("title") or metadata["filename"],
+            title=metadata.get("title") or metadata["filename"]
+            if metadata.get("isanime")
+            else metadata.get("titme") + " - " + metadata.get("season_number", 1),
             duration=metadata.get("duration", 0),
             description=metadata.get("description"),
             subtitles=metadata.get("subtitles", []),
@@ -189,12 +192,12 @@ def sync_dir_file(dir_path: Path) -> list:
         for file in files:
             file_path = Path(root) / file
             if file_path in exist_files:
-                logging.debug(f"File {file_path} already exists")
+                logger.debug(f"File {file_path} already exists")
                 continue
             try:
                 files.append(FileParser().parse_file(file_path))
             except Exception as e:
-                logging.error(f"Error parsing file {file_path} : {str(e)}")
+                logger.error(f"Error parsing file {file_path} : {str(e)}")
                 pass
     for file in files:
         if file.get("file_type") == FileType.MUSIC:
@@ -218,7 +221,7 @@ def sync_one_file(file_path: Path):
     try:
         file = FileParser().parse_file(file_path)
     except Exception as e:
-        logging.error(f"Error parsing file {file_path}: {str(e)}")
+        logger.error(f"Error parsing file {file_path}: {str(e)}")
         return
     if file.get("file_type") == FileType.MUSIC:
         sync_music_file(metadata=file, db=db)
