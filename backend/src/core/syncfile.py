@@ -5,7 +5,16 @@ from sqlalchemy import func
 from db import get_db
 from core.fileparser import FileParser, FileType
 from sqlmodel import Session, select, union
-from models import VideoFile, MusicTrackFile, Video, MusicTrack, Album, FileModal
+from models import (
+    VideoFile,
+    MusicTrackFile,
+    Video,
+    MusicTrack,
+    Album,
+    FileModal,
+    AnimeSeries,
+    AnimeTag,
+)
 from core.logger import logging
 
 
@@ -34,6 +43,7 @@ def sync_text_file(metadata: dict, db: Session):
 def sync_video_file(metadata: dict, db: Session):
     """同步影片檔案到資料庫"""
     try:
+        logging.debug(f"Syncing video file: {metadata}")
         video_file = VideoFile(
             filename=metadata.get("filename"),
             filepath=metadata.get("file_path"),
@@ -45,18 +55,40 @@ def sync_video_file(metadata: dict, db: Session):
             frame_rate=metadata.get("frame_rate", 0),
         )
 
+        anime = None
+        if metadata.get("isanime") and metadata.get("anime"):
+            anime = db.exec(
+                select(AnimeSeries).where(AnimeSeries.title == metadata["anime"])
+            ).first()
+            if not anime:
+                anime = AnimeSeries(
+                    title=metadata["anime"],
+                    description=metadata.get("description"),
+                    season_number=metadata.get("season_number", 1),
+                    release_date=metadata.get("date"),
+                )
+                db.add(anime)
+            if metadata.get("tags"):
+                for tag in metadata["tags"]:
+                    anime_tag = db.exec(
+                        select(AnimeTag).where(AnimeTag.name == tag)
+                    ).first() or AnimeTag(name=tag)
+                    if anime_tag not in anime.tags:
+                        anime.tags.append(anime_tag)
+
         video = Video(
-            title=metadata.get("title") or metadata.get("filename"),
+            title=metadata.get("title") or metadata["filename"],
             duration=metadata.get("duration", 0),
             description=metadata.get("description"),
             subtitles=metadata.get("subtitles", []),
             audio_tracks=metadata.get("audio_tracks", []),
             thumbnail=metadata.get("thumbnail"),
             file=video_file,
+            series=anime,
+            episode_number=metadata.get("episode_number", 0),
         )
 
         db.add(video)
-        db.add(video_file)
         db.commit()
         return video
 
@@ -90,12 +122,16 @@ def sync_music_file(metadata: dict, db: Session):
         artist=metadata.get("artist"),
         album_artist=metadata.get("album_artist"),
         album=metadata.get("album"),
-        release_year=metadata.get("year"),
+        release_date=metadata.get("date"),
         composer=metadata.get("composer"),
         genre=metadata.get("genre"),
         track_number=metadata.get("track_number"),
         disc_number=metadata.get("disc_number"),
         cover_art=metadata.get("cover_art"),
+        vocals=metadata.get("vocals"),
+        arrangers=metadata.get("arrangers"),
+        mixers=metadata.get("mixers"),
+        lyrics=metadata.get("lyrics"),
     )
 
     track_file = MusicTrackFile(
@@ -124,7 +160,7 @@ def sync_music_file(metadata: dict, db: Session):
                     title=metadata["album"],
                     album_artist=metadata.get("album_artist", "Unknown Artist"),
                     genre=metadata.get("genre"),
-                    release_year=metadata.get("year"),
+                    release_date=metadata.get("date"),
                     cover_art=metadata.get("cover_art"),
                 )
                 db.add(album)

@@ -24,6 +24,7 @@ mobi-python = "^0.0.1"
 colorlog = "^6.9.0"
 pypdf2 = "^3.0.1"
 python-dotenv = "^1.0.1"
+yt-dlp = "^2024.12.23"
 
 
 [build-system]

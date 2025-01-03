@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
-from sqlmodel import Field, Relationship
-from enum import Enum
+from sqlmodel import Field, Relationship, JSON
+from enum import Enum, StrEnum
 from .common import BaseModel, BasicFileModel
 from .user import User, PlayHistory
 
@@ -25,9 +25,12 @@ class MusicTrack(BaseModel, table=True):
     artist: str = Field(index=True)
     album_artist: Optional[str] = Field(default=None, index=True)
     album: Optional[str] = Field(default=None)
-    release_year: Optional[int] = Field(default=None)
+    release_date: Optional[str] = Field(default=None)
     publisher: Optional[str] = Field(default=None)
-    composer: Optional[str] = Field(default=None)
+    vocals: Optional[list[str]] = Field(default=None, sa_type=JSON)
+    composer: Optional[list[str]] = Field(default=None, sa_type=JSON)
+    arrangers: Optional[list[str]] = Field(default=None, sa_type=JSON)
+    mixers: Optional[list[str]] = Field(default=None, sa_type=JSON)
     conductor: Optional[str] = Field(default=None)
     genre: Optional[str] = Field(default=None)
 
@@ -70,7 +73,7 @@ class Album(BaseModel, table=True):
     album_artist: str = Field(index=True)
     publisher: Optional[str] = Field(default=None)
     genre: Optional[str] = Field(default=None)
-    release_year: Optional[int] = Field(default=None)
+    release_date: Optional[str] = Field(default=None)
     cover_art: Optional[str] = Field(default=None)
     total_tracks: Optional[int] = Field(default=None)
     total_discs: Optional[int] = Field(default=None)
@@ -79,6 +82,35 @@ class Album(BaseModel, table=True):
     tracks: list["MusicTrack"] = Relationship(
         back_populates="album_ref",
     )
+
+
+class StreamPlatform(StrEnum):
+    YOUTUBE = "youtube"
+    BILIBILI = "bilibili"
+    SOUNDCLOUD = "soundcloud"
+    UNKNOWN = "unknown"
+
+
+class StreamTrack(BaseModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str = Field(index=True)
+    url: str = Field(index=True)
+    stream_url: Optional[str] = Field(default=None)
+    platform: StreamPlatform
+    duration: int
+    artist: str = Field(index=True)
+    release_year: Optional[int] = Field(default=None)
+    publisher: Optional[str] = Field(default=None)
+    composer: Optional[str] = Field(default=None)
+    conductor: Optional[str] = Field(default=None)
+    genre: Optional[str] = Field(default=None)
+    cover_art: Optional[str] = Field(default=None)
+    lyrics: Optional[str] = Field(default=None)
+
+    play_history: list["PlayHistory"] = Relationship(
+        back_populates="streamtrack",
+    )
+    playlists: list["PlaylistTrack"] = Relationship(back_populates="streamtrack")
 
 
 class Playlist(BaseModel, table=True):
@@ -91,11 +123,19 @@ class Playlist(BaseModel, table=True):
     tracks: list["PlaylistTrack"] = Relationship(back_populates="playlist")
 
 
+class Track_type(StrEnum):
+    track = "track"
+    stream = "stream"
+
+
 class PlaylistTrack(BaseModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     playlist_id: int = Field(foreign_key="playlist.id")
-    track_id: int = Field(foreign_key="musictrack.id")
+    track_id: Optional[int] = Field(foreign_key="musictrack.id")
+    streamtrack_id: Optional[int] = Field(foreign_key="streamtrack.id")
     position: int
+    track_type: Track_type = Field(default=Track_type.track)
     added_at: datetime = Field(default_factory=datetime.now)
     playlist: "Playlist" = Relationship(back_populates="tracks")
-    track: "MusicTrack" = Relationship(back_populates="playlists")
+    track: Optional["MusicTrack"] = Relationship(back_populates="playlists")
+    streamtrack: Optional["StreamTrack"] = Relationship(back_populates="playlists")

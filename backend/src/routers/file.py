@@ -3,7 +3,7 @@ from typing import Annotated, List, Optional, Union
 from fastapi import APIRouter, Query, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy import literal
-from models.music import MusicTrack, Album
+from models.music import MusicTrack, Album, StreamTrack
 from models.video import Video
 from models.file import FileModal
 from sqlmodel import Session, desc, select, or_
@@ -15,6 +15,7 @@ from core.setting import load_setting
 from PIL import Image
 import io
 from pydantic import BaseModel
+from core.musicstream import detect_url_type, MusicStream
 
 
 class FilePathRequest(BaseModel):
@@ -257,6 +258,31 @@ async def search_files(name: str, session: SessionDep):
         *[{"id": m.id, "title": m.title, "type": "music"} for m in musics],
         *[{"id": a.id, "title": a.title, "type": "album"} for a in albums],
     ]
+
+
+class URLTrackRequest(BaseModel):
+    url: str
+
+
+@file_router.post("/urltrack")
+async def url_track(session: SessionDep, request: URLTrackRequest):
+    """解析網址"""
+    url = request.url
+    type = detect_url_type(url)
+    if type == "unknown":
+        raise HTTPException(status_code=400, detail="無法解析網址")
+    sdata = MusicStream(url).get_stream_info()
+    stream_track = StreamTrack(
+        title=sdata.title,
+        url=url,
+        stream_url=sdata.url,
+        platform=type,
+        duration=sdata.duration,
+        cover_art=sdata.thumbnail,
+    )
+    session.add(stream_track)
+    session.commit()
+    return stream_track
 
 
 @file_router.delete("/{file_id}")

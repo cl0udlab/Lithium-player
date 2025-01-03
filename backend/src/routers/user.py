@@ -22,6 +22,6 @@ class UserResponse(BaseModel):
 
 
 @user_router.get("/me", response_model=UserResponse)
-async def get_my_playlists(user: User = Depends(get_user)):
+async def get_user_info(user: User = Depends(get_user)):
     """獲取使用者資訊"""
     return user

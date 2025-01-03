@@ -6,7 +6,7 @@ from datetime import datetime
 from .common import BaseModel
 
 if TYPE_CHECKING:
-    from .music import Playlist, MusicTrack
+    from .music import Playlist, MusicTrack, StreamTrack
     from .video import Video
 
 
@@ -58,20 +58,29 @@ class User(BaseModel, table=True):
 class PlayHistory(BaseModel, table=True):
     __table_args__ = (
         CheckConstraint(
-            "(track_id IS NOT NULL AND video_id IS NULL) OR (track_id IS NULL AND video_id IS NOT NULL)",
-            name="check_track_or_video",
+            """
+            (track_id IS NOT NULL AND video_id IS NULL AND streamtrack_id IS NULL) OR
+            (track_id IS NULL AND video_id IS NOT NULL AND streamtrack_id IS NULL) OR
+            (track_id IS NULL AND video_id IS NULL AND streamtrack_id IS NOT NULL)
+            """,
+            name="check_track_or_video_or_stream",
         ),
     )
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
     track_id: Optional[int] = Field(foreign_key="musictrack.id", default=None)
     video_id: Optional[int] = Field(foreign_key="video.id", default=None)
+    streamtrack_id: Optional[int] = Field(foreign_key="streamtrack.id", default=None)
     played_at: datetime = Field(default_factory=datetime.now)
     musictrack: Optional["MusicTrack"] = Relationship(
         back_populates="play_history",
         sa_relationship_kwargs={"lazy": "joined"},
     )
     video: Optional["Video"] = Relationship(
+        back_populates="play_history",
+        sa_relationship_kwargs={"lazy": "joined"},
+    )
+    streamtrack: Optional["StreamTrack"] = Relationship(
         back_populates="play_history",
         sa_relationship_kwargs={"lazy": "joined"},
     )

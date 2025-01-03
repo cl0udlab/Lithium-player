@@ -100,13 +100,13 @@ class AnimeSeries(BaseModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str = Field(index=True)
     original_title: Optional[str] = Field(default=None)
-    release_year: int
+    release_date: str
     author: Optional[str] = Field(default=None)
     studio: Optional[str] = Field(default=None)
     description: Optional[str] = Field(default=None)
     season_number: Optional[int] = Field(default=None)
     total_episodes: Optional[int] = Field(default=None)
-    cover_image: Optional[bytes] = Field(default=None)
+    cover_image: Optional[str] = Field(default=None)
     tags: list[AnimeTag] = Relationship(
         back_populates="series", link_model=AnimeTagsLink
     )
