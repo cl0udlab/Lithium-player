@@ -16,9 +16,10 @@ services:
   backend:
     build:
       context: ./backend
+      dockerfile: dev.Dockerfile
     container_name: lithium-backend
     volumes:
-      - backend:/app/data
+      - ./backend:/app/backend
     ports:
       - "8000:8000"
     environment:
@@ -27,19 +28,7 @@ services:
       - lithium-network
     depends_on:
       - postgres
-
-  frontend:
-    build:
-      context: ./frontend/web
-    container_name: lithium-frontend
-    volumes:
-      - ./frontend:/app
-    ports:
-      - "3000:3000"
-    networks:
-      - lithium-network
-    depends_on:
-      - backend
+    tty: true
 
 volumes:
   postgres_data:
