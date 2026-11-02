@@ -4,8 +4,9 @@ WORKDIR /app
 
 COPY pnpm-lock.yaml /app
 COPY package.json  /app
+COPY pnpm-workspace.yaml /app
 
-RUN npm i -g pnpm
+RUN npm i -g pnpm@11
 RUN pnpm install
 
 COPY . .

@@ -2,6 +2,7 @@
 	import { APIUrl } from '$lib/api'
 	import Dialog from '$lib/components/ui/Dialog.svelte'
 	import Button from '$lib/components/ui/Button.svelte'
+	import EbookReader from '$lib/components/EbookReader.svelte'
 	import Spinner from '$lib/components/ui/Spinner.svelte'
 	import StatusMessage from '$lib/components/ui/StatusMessage.svelte'
 	import type { Filei } from '$lib/types'
@@ -10,8 +11,11 @@
 
 	let open = $state(false)
 	let content = $state('')
+	let book = $state<File | null>(null)
 	let loading = $state(true)
 	let error = $state('')
+
+	const isEbook = (format?: string) => format === 'epub' || format === 'mobi'
 
 	$effect(() => {
 		if (!file) return
@@ -19,12 +23,16 @@
 		open = true
 		loading = true
 		error = ''
+		book = null
 		let objectUrl = ''
 		fetch(`${APIUrl}/stream/file/${current.id}`)
 			.then(async (response) => {
 				if (!response.ok) throw new Error('檔案載入失敗')
 				if (current.file_format === 'txt') {
 					content = await response.text()
+				} else if (isEbook(current.file_format)) {
+					const name = current.filepath.split(/[\\/]/).pop() ?? `book.${current.file_format}`
+					book = new File([await response.blob()], name)
 				} else {
 					objectUrl = URL.createObjectURL(await response.blob())
 					content = objectUrl
@@ -53,8 +61,10 @@
 			title="PDF 檢視器"
 			class="h-full min-h-[70vh] w-full rounded-lg border-none"
 		></iframe>
-	{:else if file?.file_format === 'epub' || file?.file_format === 'mobi'}
-		<StatusMessage title="尚未支援這個格式" message="EPUB / MOBI 預覽之後再做。" />
+	{:else if isEbook(file?.file_format) && book}
+		{#key book}
+			<EbookReader file={book} />
+		{/key}
 	{:else}
 		<pre class="font-mono text-sm leading-relaxed whitespace-pre-wrap text-fg-muted">{content}</pre>
 	{/if}

@@ -41,6 +41,7 @@ def get_title(name: str) -> dict[str]:
     name = name.strip()
     name = re.sub(r"\[.*?\]|\(.*?\)", "", name)
     name = re.sub(r"\.\w+$", "", name)
+    name = re.sub(r"\s+-\s+\d{1,3}(?:v\d)?\s*$", "", name)
     name = name.strip()
     name = re.split(r"\s*\/\s*|\s*\|\s*", name)
     for n in name:
@@ -102,6 +103,11 @@ def parse_filename(filename: str) -> AnimeFile:
         if make_re(TYPE).match(block.upper()):
             result["type"] = block.upper()
             continue
+
+    if result["episode"] == 0:
+        episode_match = re.search(r"\s-\s(\d{1,3})(?:v\d)?(?:\s|\[|$)", filename)
+        if episode_match:
+            result["episode"] = int(episode_match.group(1))
 
     return AnimeFile(**result)
 

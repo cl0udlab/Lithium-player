@@ -1,12 +1,15 @@
 from typing import Annotated, Optional
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 from sqlmodel import Session, select
 from sqlalchemy.orm import selectinload
 
 from db import get_db
-from models import AnimeSeries, VideoFile
+from models import AnimeSeries, Video, VideoFile
 from fastapi import HTTPException
+from core.animeparser import Bangumi_SearchResult, search_Bangumi
+from core.syncfile import delete_anime, delete_video, refresh_anime, refresh_video
 
 video_router = APIRouter(prefix="/video", tags=["video"])
 
@@ -52,6 +55,63 @@ class AnimeResponse(BaseModel):
         from_attributes = True
 
 
+class RefreshRequest(BaseModel):
+    bangumi_id: Optional[int] = None
+    search_title: Optional[str] = None
+
+
+async def _run_refresh(func, item_id: int, session: Session, request: RefreshRequest):
+    try:
+        return await run_in_threadpool(
+            func,
+            item_id,
+            session,
+            request.bangumi_id,
+            (request.search_title or "").strip() or None,
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@video_router.get("/bangumi/search", response_model=list[Bangumi_SearchResult])
+async def search_bangumi(q: str = Query(..., min_length=1)):
+    return await run_in_threadpool(search_Bangumi, q.strip(), 20)
+
+
+@video_router.delete("/anime/{anime_id}", status_code=204)
+async def remove_anime(anime_id: int, session: SessionDep):
+    if not delete_anime(anime_id, session):
+        raise HTTPException(status_code=404, detail=f"找不到 ID 為 {anime_id} 的動畫")
+
+
+@video_router.post("/anime/{anime_id}/refresh")
+async def rescrape_anime(
+    anime_id: int, session: SessionDep, request: RefreshRequest = RefreshRequest()
+):
+    new_id = await _run_refresh(refresh_anime, anime_id, session, request)
+    if new_id is None and not session.get(AnimeSeries, anime_id):
+        raise HTTPException(status_code=404, detail=f"找不到 ID 為 {anime_id} 的動畫")
+    return {"id": new_id}
+
+
+@video_router.delete("/{video_id}", status_code=204)
+async def remove_video(video_id: int, session: SessionDep):
+    if not delete_video(video_id, session):
+        raise HTTPException(status_code=404, detail=f"找不到 ID 為 {video_id} 的影片")
+
+
+@video_router.post("/{video_id}/refresh", response_model=Video)
+async def rescrape_video(
+    video_id: int, session: SessionDep, request: RefreshRequest = RefreshRequest()
+):
+    video = await _run_refresh(refresh_video, video_id, session, request)
+    if video is None:
+        raise HTTPException(status_code=404, detail=f"找不到 ID 為 {video_id} 的影片")
+    return video
+
+
 @video_router.get("/anime", response_model=list[AnimeSeries])
 async def get_anime(session: SessionDep):
     """獲取動畫列表"""
@@ -70,6 +130,8 @@ async def get_anime_by_id(anime_id: int, session: SessionDep):
     )
 
     result = session.exec(stmt).first()
+    if not result:
+        raise HTTPException(status_code=404, detail=f"找不到 ID 為 {anime_id} 的動畫")
 
     tags = [
         TagResponse(id=tag.id, name=tag.name, description=tag.description)
@@ -92,8 +154,6 @@ async def get_anime_by_id(anime_id: int, session: SessionDep):
         for ep in result.episodes
     ]
 
-    if not result:
-        raise HTTPException(status_code=404, detail=f"找不到 ID 為 {anime_id} 的動畫")
     return AnimeResponse(
         id=result.id,
         title=result.title,

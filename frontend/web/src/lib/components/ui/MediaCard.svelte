@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte'
 	import type { IconComponent } from '$lib/types'
 	import { Play, Disc3 } from 'lucide-svelte'
 
@@ -12,6 +13,7 @@
 		onplay,
 		badge,
 		placeholder: Placeholder = Disc3,
+		actions,
 		class: className = ''
 	}: {
 		title: string
@@ -23,6 +25,8 @@
 		onplay?: () => void
 		badge?: string
 		placeholder?: IconComponent
+		/** 右上角的操作選單, 滑鼠移上去才顯示 */
+		actions?: Snippet
 		class?: string
 	} = $props()
 
@@ -65,6 +69,13 @@
 			>
 				{badge}
 			</span>
+		{/if}
+		{#if actions}
+			<div
+				class="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 has-[[aria-expanded=true]]:opacity-100"
+			>
+				{@render actions()}
+			</div>
 		{/if}
 		{#if onplay}
 			<button

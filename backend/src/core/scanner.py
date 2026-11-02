@@ -4,7 +4,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 from core.logger import logger
-from core.syncfile import remove_missing_music, sync_dir_file
+from core.syncfile import (
+    merge_split_albums,
+    remove_missing_music,
+    remove_missing_videos,
+    sync_dir_file,
+)
 
 
 @dataclass
@@ -57,6 +62,7 @@ class LibraryScanner:
         for path in paths:
             try:
                 removed += remove_missing_music(path)
+                removed += remove_missing_videos(path)
                 with self._lock:
                     self._status.removed = removed
                 added += len(sync_dir_file(path, self._on_progress))
@@ -65,12 +71,16 @@ class LibraryScanner:
                 error = f"{path}: {str(e)}"
             with self._lock:
                 self._status.added = added
+        try:
+            merge_split_albums()
+        except Exception as e:
+            logger.error(str(e))
         with self._lock:
             self._status.running = False
             self._status.current_file = None
             self._status.error = error
             self._status.finished_at = datetime.now()
-        logger.info(f"媒體庫掃描完成, 新增 {added} 個檔案, 移除 {removed} 首遺失的音樂")
+        logger.info(f"媒體庫掃描完成, 新增 {added} 個檔案, 移除 {removed} 個遺失的檔案")
 
 
 scanner = LibraryScanner()

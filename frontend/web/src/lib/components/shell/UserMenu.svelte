@@ -26,7 +26,7 @@
 
 <button
 	{...popover.trigger}
-	class="transition-transforms grid h-9 w-9 place-items-center rounded-full border border-lime-50/20 text-sm font-bold text-white uppercase"
+	class="grid h-9 w-9 place-items-center rounded-full border border-lime-50/20 text-sm font-bold text-white uppercase transition-transform"
 	aria-label="使用者選單"
 >
 	{user?.username.charAt(0) ?? '?'}

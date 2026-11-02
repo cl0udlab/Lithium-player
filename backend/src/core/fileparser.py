@@ -1,10 +1,11 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 from tinytag import TinyTag
 import av
 from enum import Enum
 from uuid import uuid4
+import ebooklib
 from ebooklib import epub
 from mobi import Mobi
 from PyPDF2 import PdfReader
@@ -17,7 +18,7 @@ from core.musicparser import (
     parse_track_info,
 )
 from core.filenameparse import parse_filename
-from core.animeparser import get_from_Bangumi
+from core.animeparser import get_from_Bangumi, get_Bangumi_subject
 from core.movieparser import TMDBApi
 from core.setting import load_setting
 import requests
@@ -49,7 +50,10 @@ class FileParser:
 
     @classmethod
     def save_cover_art_from_url(cls, image_url: str) -> str:
-        image_data = requests.get(image_url, timeout=10).content
+        r = requests.get(image_url, timeout=10)
+        r.raise_for_status()
+        image_data = r.content
+        cls.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
         image_id = str(uuid4())
         image_path = cls.IMAGES_DIR / f"{image_id}.jpg"
         with open(image_path, "wb") as f:
@@ -71,7 +75,11 @@ class FileParser:
             raise ValueError(f"Unsupported file type: {extension}")
 
     @staticmethod
-    def parse_file(file_path: Union[str, Path]) -> dict:
+    def parse_file(
+        file_path: Union[str, Path],
+        bangumi_id: Optional[int] = None,
+        search_title: Optional[str] = None,
+    ) -> dict:
         """get file metadata"""
         file_path = Path(file_path)
         if not file_path.exists():
@@ -92,51 +100,61 @@ class FileParser:
         if file_type == FileType.MUSIC:
             return {**base_info, **FileParser._parse_music(file_path)}
         elif file_type == FileType.VIDEO:
-            return {**base_info, **FileParser._parse_video(file_path)}
+            return {
+                **base_info,
+                **FileParser._parse_video(file_path, bangumi_id, search_title),
+            }
         elif file_type == FileType.TEXT:
             return {**base_info, **FileParser._parse_text(file_path)}
         else:
             return base_info
 
     @staticmethod
+    def _epub_meta(book: epub.EpubBook, name: str) -> Optional[str]:
+        values = book.get_metadata("DC", name)
+        return values[0][0] if values else None
+
+    @staticmethod
+    def _mobi_text(value) -> Optional[str]:
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="replace")
+        return value
+
+    @staticmethod
     def _parse_text(file_path: Path) -> dict:
+        file_format = file_path.suffix.lower().lstrip(".")
+
+        result = {"format": file_format}
         try:
-            if file_path.suffix == ".epub":
-                book = epub.read_epub(file_path)
-                metadata = book.get_metadata()
-                return {
-                    "pages": len(book.get_items_of_type("page")),
-                    "author": metadata.get("author"),
-                    "publisher": metadata.get("publisher"),
-                    "format": "epub",
-                }
-            elif file_path.suffix == ".mobi":
-                book = Mobi(file_path)
-                return {
-                    "pages": book.get_pages(),
-                    "author": book.get_author(),
-                    "publisher": book.get_publisher(),
-                    "format": "mobi",
-                }
-            elif file_path.suffix == ".pdf":
+            if file_format == "epub":
+                book = epub.read_epub(str(file_path), options={"ignore_ncx": True})
+                result.update(
+                    title=FileParser._epub_meta(book, "title"),
+                    pages=len(list(book.get_items_of_type(ebooklib.ITEM_DOCUMENT))),
+                    author=FileParser._epub_meta(book, "creator"),
+                    publisher=FileParser._epub_meta(book, "publisher"),
+                )
+            elif file_format == "mobi":
+                book = Mobi(str(file_path))
+                book.parse()
+                exth = book.config.get("exth", {}).get("records", {})
+                result.update(
+                    title=FileParser._mobi_text(book.title()),
+                    author=FileParser._mobi_text(exth.get(100)),
+                    publisher=FileParser._mobi_text(exth.get(101)),
+                )
+            elif file_format == "pdf":
                 reader = PdfReader(file_path)
-                metadata = reader.metadata
-                return {
-                    "pages": len(reader.pages),
-                    "author": metadata.get("/Author", "Unknown"),
-                    "publisher": metadata.get("/Producer", "Unknown"),
-                    "format": "pdf",
-                }
-            else:
-                return {
-                    "pages": 0,
-                    "author": "Unknown",
-                    "publisher": "Unknown",
-                    "format": "txt",
-                }
+                metadata = reader.metadata or {}
+                result.update(
+                    title=metadata.get("/Title"),
+                    pages=len(reader.pages),
+                    author=metadata.get("/Author"),
+                    publisher=metadata.get("/Producer"),
+                )
         except Exception as e:
-            logger.error(f"Error parsing text file: {e}")
-            return {}
+            logger.error(f"Error parsing text file {file_path.name}: {e}")
+        return result
 
     @staticmethod
     def _parse_music(file_path: Path) -> dict:
@@ -194,7 +212,12 @@ class FileParser:
             return {}
 
     @staticmethod
-    def _parse_video(file_path: Path) -> dict:
+    def _parse_video(
+        file_path: Path,
+        bangumi_id: Optional[int] = None,
+        search_title: Optional[str] = None,
+    ) -> dict:
+        """bangumi_id / search_title 用於手動刮削, 沒給就從檔名判斷"""
         try:
             logger.info(f"Parsing video file: {file_path}")
             file_path_str = str(file_path.resolve())
@@ -202,88 +225,71 @@ class FileParser:
             video_stream: av.VideoStream = next(
                 s for s in container.streams if s.type == "video"
             )
-            cover_path = None
-            image_id = str(uuid4())
+            image_id = None
             title = file_path.stem
             description = ""
             season_number = ""
             date = ""
             episode_number = 1
             tags = []
+            original_title = None
+            total_episodes = None
+            cover_url = None
             anime_success = False
             movie_success = False
             parse_file = parse_filename(file_path.stem)
             logger.info(
                 f"Parse file name status: {'failed' if parse_file.parse_failed else 'success'}"
             )
-            if parse_file.parse_failed:
-                try:
-                    container.seek(0)
-                    for frame in container.decode(video=0):
-                        img = frame.to_image()
-                        covers_dir = Path("data/images")
-                        covers_dir.mkdir(parents=True, exist_ok=True)
-                        cover_path = covers_dir / f"{image_id}.jpg"
-                        img.thumbnail((500, 500))
-                        img.save(str(cover_path), "JPEG", quality=85)
-                        break
-                    image_id = image_id + ".jpg"
-                except Exception as e:
-                    logger.error(f"Error extracting cover: {e}")
-            else:
-                logger.info("Getting info from bangumi")
-                bangumi_info = get_from_Bangumi(
+            if not search_title and not parse_file.parse_failed:
+                search_title = (
                     parse_file.name_zh or parse_file.name_jp or parse_file.name_en
                 )
-                if bangumi_info:
-                    logger.debug(f"Bangumi info: {bangumi_info}")
-                    logger.info("success getting info from bangumi")
-                    image_id = FileParser.save_cover_art_from_url(
-                        bangumi_info.images.large
-                    )
-                    title = bangumi_info.name_cn or bangumi_info.name
-                    description = bangumi_info.summary
-                    season_number = parse_file.season
-                    date = bangumi_info.date
-                    tags = [tag.name for tag in bangumi_info.tags]
-                    episode_number = parse_file.episode
-                    anime_success = True
+
+            bangumi_info = None
+            if bangumi_id:
+                logger.info(f"Getting info from bangumi subject {bangumi_id}")
+                bangumi_info = get_Bangumi_subject(bangumi_id)
+            elif search_title:
+                logger.info("Getting info from bangumi")
+                bangumi_info = get_from_Bangumi(search_title)
+
+            if bangumi_info:
+                logger.debug(f"Bangumi info: {bangumi_info}")
+                logger.info("success getting info from bangumi")
+
+                cover_url = bangumi_info.images.large if bangumi_info.images else None
+                title = bangumi_info.name_cn or bangumi_info.name
+                original_title = bangumi_info.name
+                description = bangumi_info.summary
+                season_number = parse_file.season
+                date = bangumi_info.date or ""
+                tags = [tag.name for tag in bangumi_info.tags]
+                episode_number = parse_file.episode or 1
+                total_episodes = bangumi_info.total_episodes or bangumi_info.eps
+                anime_success = True
+            elif search_title and not bangumi_id:
+                logger.info("Getting info from TMDB")
+                apikey = load_setting().tmd_api_key
+                if apikey == "":
+                    logger.error("TMDB API key not set")
                 else:
-                    logger.info("Getting info from TMDB")
-                    apikey = load_setting().tmd_api_key
-                    if apikey == "":
-                        logger.error("TMDB API key not set")
-                    else:
-                        tmdb_info = TMDBApi(apikey).search_movie(
-                            parse_file.name_zh
-                            or parse_file.name_jp
-                            or parse_file.name_en
-                        )
-                        if tmdb_info:
-                            logger.debug(f"TMDB info: {tmdb_info}")
-                            logger.info("success getting info from TMDB")
-                            image_id = FileParser.save_cover_art_from_url(
-                                tmdb_info.poster_path
+                    tmdb_info = TMDBApi(apikey).search_movie(search_title)
+                    if tmdb_info:
+                        logger.debug(f"TMDB info: {tmdb_info}")
+                        logger.info("success getting info from TMDB")
+                        if tmdb_info.poster_path:
+                            image_id = FileParser._try_save_cover_from_url(
+                                tmdb_info.poster_url
                             )
-                            title = tmdb_info.title
-                            description = tmdb_info.overview
-                            date = tmdb_info.release_date
-                            tags = tmdb_info.genres
-                            movie_success = True
-                        else:
-                            try:
-                                container.seek(0)
-                                for frame in container.decode(video=0):
-                                    img = frame.to_image()
-                                    covers_dir = Path("data/images")
-                                    covers_dir.mkdir(parents=True, exist_ok=True)
-                                    cover_path = covers_dir / f"{image_id}.jpg"
-                                    img.thumbnail((500, 500))
-                                    img.save(str(cover_path), "JPEG", quality=85)
-                                    break
-                                image_id = image_id + ".jpg"
-                            except Exception as e:
-                                logger.error(f"Error extracting cover: {e}")
+                        title = tmdb_info.title
+                        description = tmdb_info.overview
+                        date = tmdb_info.release_date
+                        tags = tmdb_info.genres
+                        movie_success = True
+
+            if not image_id:
+                image_id = FileParser._extract_video_frame(container)
 
             audio_tracks = []
             for stream in container.streams:
@@ -298,8 +304,8 @@ class FileParser:
                 "width": video_stream.width,
                 "height": video_stream.height,
                 "frame_rate": float(video_stream.average_rate or 0),
-                "codec": video_stream.codec.name,
-                "format": file_path.suffix.lstrip("."),
+                "codec": FileParser._get_video_codec(video_stream.codec.name),
+                "format": file_path.suffix.lstrip(".").lower(),
                 "audio_tracks": audio_tracks,
                 "thumbnail": image_id,
                 "ismovie": movie_success,
@@ -309,6 +315,9 @@ class FileParser:
                 "date": date,
                 "tags": tags,
                 "episode_number": episode_number,
+                "original_title": original_title,
+                "total_episodes": total_episodes,
+                "cover_url": cover_url,
             }
 
             container.close()
@@ -329,3 +338,39 @@ class FileParser:
             ".wav": "wav",
         }
         return codec_map.get(extension.lower(), "unknown")
+
+    @classmethod
+    def _try_save_cover_from_url(cls, image_url: str) -> str | None:
+        try:
+            return cls.save_cover_art_from_url(image_url)
+        except Exception as e:
+            logger.error(f"Error downloading cover {image_url}: {e}")
+            return None
+
+    @classmethod
+    def _extract_video_frame(cls, container) -> str | None:
+        try:
+            container.seek(int((container.duration or 0) * 0.1))
+            for frame in container.decode(video=0):
+                img = frame.to_image()
+                img.thumbnail((500, 500))
+                cls.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+                image_id = f"{uuid4()}.jpg"
+                img.save(str(cls.IMAGES_DIR / image_id), "JPEG", quality=85)
+                return image_id
+        except Exception as e:
+            logger.error(f"Error extracting cover: {e}")
+        return None
+
+    @staticmethod
+    def _get_video_codec(codec_name: str) -> str:
+        codec_map = {
+            "h264": "h264",
+            "hevc": "h265",
+            "h265": "h265",
+            "vp9": "vp9",
+            "av1": "av1",
+            "libdav1d": "av1",
+            "libaom-av1": "av1",
+        }
+        return codec_map.get((codec_name or "").lower(), "unknown")
