@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: lithium-db
+    environment:
+      POSTGRES_DB: lithium
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - lithium-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dev.Dockerfile
+    container_name: lithium-backend
+    volumes:
+      - ./backend:/app/
+      - C:\Users\whitecloud\Music:/music
+    ports:
+      - "8000:8000"
+    environment:
+      SQLIP: postgres
+    networks:
+      - lithium-network
+    depends_on:
+      - postgres
+    tty: true
+
+volumes:
+  postgres_data:
+  backend:
+
+networks:
+  lithium-network:
+    driver: bridge

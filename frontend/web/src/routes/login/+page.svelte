@@ -1,8 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation'
-	import { Music } from 'lucide-svelte'
+	import { User, Lock, CircleAlert } from 'lucide-svelte'
 	import Cookies from 'js-cookie'
-  import { APIUrl } from '$lib/api';
+	import { APIUrl } from '$lib/api'
+	import Button from '$lib/components/ui/Button.svelte'
+	import Input from '$lib/components/ui/Input.svelte'
+	import Spinner from '$lib/components/ui/Spinner.svelte'
 
 	interface LoginResponse {
 		access_token: string
@@ -10,38 +13,38 @@
 		token_type: string
 	}
 
-	let username = ''
-	let password = ''
-	let error = ''
+	let username = $state('')
+	let password = $state('')
+	let error = $state('')
+	let loading = $state(false)
 
-	async function handleSubmit() {
+	async function handleSubmit(e: SubmitEvent) {
+		e.preventDefault()
 		if (!username || !password) {
 			error = '請填寫所有欄位'
 			return
 		}
-
+		loading = true
+		error = ''
 		try {
 			const response = await fetch(`${APIUrl}/auth/login`, {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
+				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ username, password })
 			})
-
 			if (!response.ok) {
 				const data = await response.json()
-				error = data.detail || '登入失敗'
+				error = data.detail === 'Invalid credentials' ? '帳號或密碼錯誤' : data.detail || '登入失敗'
 				return
 			}
-
 			const data: LoginResponse = await response.json()
 			Cookies.set('access_token', data.access_token)
 			Cookies.set('refresh_token', data.refresh_token)
-
 			await goto('/app')
-		} catch (err) {
+		} catch {
 			error = '伺服器連接失敗'
+		} finally {
+			loading = false
 		}
 	}
 </script>
@@ -50,64 +53,42 @@
 	<title>登入 - Lithium Player</title>
 </svelte:head>
 
-<div class="flex min-h-screen items-center justify-center bg-base-200 p-4">
-	<div class="hover:shadow-3xl card w-96 bg-base-100 shadow-2xl transition-shadow duration-300">
-		<div class="card-body p-8">
-			<div class="mb-8 flex flex-col items-center">
-				<div class="mb-4 rounded-full bg-primary p-4 text-primary-content">
-					<Music size={32} />
-				</div>
-				<h2 class="card-title text-3xl font-bold">Lithium Player</h2>
-				<p class="mt-2 text-base-content/60">歡迎回來，請登入您的帳號</p>
-			</div>
+<div class="grid min-h-screen place-items-center p-4">
+	<div class="w-full max-w-sm">
+		<div class="mb-8 flex flex-col items-center text-center">
+			<img src="/Lithium.png" alt="" class="mb-4 h-14 w-14" />
+			<h1 class="text-2xl font-bold tracking-tight">Lithium Player</h1>
+			<p class="mt-1 text-sm text-fg-muted">歡迎回來, 請登入你的帳號</p>
+		</div>
 
+		<form
+			onsubmit={handleSubmit}
+			class="flex flex-col gap-4 rounded-2xl border border-line/10 bg-surface p-6"
+		>
 			{#if error}
-				<div role="alert" class="alert alert-error">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-6 w-6 shrink-0 stroke-current"
-						fill="none"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-					<span>{error}</span>
+				<div role="alert" class="flex items-center gap-2 rounded-lg bg-danger/10 px-3 py-2.5 text-sm text-danger">
+					<CircleAlert class="h-4 w-4 shrink-0" />
+					{error}
 				</div>
 			{/if}
-
-			<form on:submit|preventDefault={handleSubmit} class="form-control gap-4">
-				<div class="form-control">
-					<label class="label" for="username">
-						<span class="label-text font-medium">用戶名</span>
-					</label>
-					<input
-						id="username"
-						type="text"
-						bind:value={username}
-						placeholder="請輸入用戶名"
-						class="input input-bordered w-full transition-colors focus:input-primary"
-					/>
-				</div>
-
-				<div class="form-control">
-					<label class="label" for="password">
-						<span class="label-text font-medium">密碼</span>
-					</label>
-					<input
-						type="password"
-						bind:value={password}
-						placeholder="請輸入密碼"
-						class="input input-bordered w-full transition-colors focus:input-primary"
-					/>
-				</div>
-
-				<button type="submit" class="btn btn-primary mt-6 w-full"> 登入 </button>
-			</form>
-		</div>
+			<label class="flex flex-col gap-1.5">
+				<span class="text-xs font-medium text-fg-muted">使用者名稱</span>
+				<Input bind:value={username} icon={User} autocomplete="username" placeholder="使用者名稱" />
+			</label>
+			<label class="flex flex-col gap-1.5">
+				<span class="text-xs font-medium text-fg-muted">密碼</span>
+				<Input
+					type="password"
+					bind:value={password}
+					icon={Lock}
+					autocomplete="current-password"
+					placeholder="密碼"
+				/>
+			</label>
+			<Button variant="primary" size="lg" type="submit" class="mt-2 w-full" disabled={loading}>
+				{#if loading}<Spinner class="h-4 w-4" />{/if}
+				登入
+			</Button>
+		</form>
 	</div>
 </div>

@@ -1,16 +1,12 @@
 import type { PageLoad } from './$types'
-import { APIUrl } from '$lib/api'
-import Cookies from 'js-cookie'
+import { apiFetch } from '$lib/api'
+
+// token 存在 js-cookie, 只有瀏覽器讀得到, SSR 時會變成沒登入
+export const ssr = false
 
 export const load = (async ({ fetch, params }) => {
 	try {
-		const token = Cookies.get('access_token')
-
-		const responsemusic = await fetch(`${APIUrl}/playlist/playlist/${params.playlistid}`, {
-			headers: {
-				Authorization: `Bearer ${token}`
-			}
-		})
+		const responsemusic = await apiFetch(`/playlist/playlist/${params.playlistid}`, {}, fetch)
 
 		if (!responsemusic.ok) {
 			return {

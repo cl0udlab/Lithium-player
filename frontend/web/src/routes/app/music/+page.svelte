@@ -1,65 +1,47 @@
 <script lang="ts">
-	export let data
 	import { getContext } from 'svelte'
-	import type { MusicTrack } from '$lib/types'
-	import { Play } from 'lucide-svelte'
-	import CD from '$lib/image/cd.svelte'
-  import { APIUrl } from '$lib/api'
-	const { musics, error, status } = data
-	const playMusic = getContext<(track: MusicTrack) => void>('playMusic')
+	import { Play, Shuffle } from 'lucide-svelte'
+	import type { MusicTrack, PlayableTrack } from '$lib/types'
+	import Button from '$lib/components/ui/Button.svelte'
+	import PageHeader from '$lib/components/ui/PageHeader.svelte'
+	import StatusMessage from '$lib/components/ui/StatusMessage.svelte'
+	import TrackList from '$lib/components/ui/TrackList.svelte'
+	import type { PageData } from './$types'
 
-	function handlePlay(track: MusicTrack) {
-		playMusic(track)
-	}
+	let { data }: { data: PageData } = $props()
 
-	function getCoverArtUrl(coverArt: string) {
-		return `${APIUrl}/file/image?image_id=${coverArt}&image_size=400`
+	const playMusiclist = getContext<(tracks: PlayableTrack[], startIndex?: number) => void>(
+		'playMusiclist'
+	)
+	const tracks: PlayableTrack[] = $derived(
+		((data.musics ?? []) as MusicTrack[]).map((t) => ({ ...t, kind: 'music' }))
+	)
+
+	function shuffle() {
+		playMusiclist([...tracks].sort(() => Math.random() - 0.5))
 	}
 </script>
 
 <svelte:head>
-	<title>音樂 - Lithium Player</title>
+	<title>歌曲 - Lithium Player</title>
 </svelte:head>
 
-{#if error}
-	<div class="flex flex-col items-center justify-center p-8 text-error">
-		<h2 class="mb-4 text-2xl font-bold">載入失敗</h2>
-		<p class="text-lg">{error}</p>
-		{#if status === 500}
-			<button type="button" class="btn btn-error mt-4" onclick={() => window.location.reload()}
-				>重試</button
-			>
-		{/if}
-	</div>
+{#if data.error}
+	<StatusMessage kind="error" title="載入失敗" message={data.error} retry={data.status === 500} />
 {:else}
-	<div class="grid grid-cols-1 gap-5 p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-		{#each musics as music}
-			<div
-				class="overflow-hidden rounded-lg bg-base-200 shadow-lg transition-shadow hover:shadow-xl"
-			>
-				<div class="group relative">
-					{#if music.cover_art}
-						<img
-							src={getCoverArtUrl(music.cover_art)}
-							alt="{music.title} Cover"
-							class="aspect-square w-full object-cover"
-						/>
-					{:else}
-						<CD class="aspect-square w-full object-cover" />
-					{/if}
-					<button
-						class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
-						onclick={() => handlePlay(music)}
-					>
-						<Play size={48} class="text-white" />
-					</button>
-				</div>
-				<div class="p-4">
-					<h3 class="truncate text-lg font-semibold">{music.title}</h3>
-					<p class="truncate text-sm text-gray-500">{music.artist}</p>
-					<p class="truncate text-xs text-gray-400">{music.album}</p>
-				</div>
-			</div>
-		{/each}
-	</div>
+	<PageHeader title="歌曲" subtitle="{tracks.length} 首">
+		{#snippet actions()}
+			<Button onclick={shuffle} disabled={!tracks.length}>
+				<Shuffle class="h-4 w-4" /> 隨機播放
+			</Button>
+			<Button variant="primary" onclick={() => playMusiclist(tracks)} disabled={!tracks.length}>
+				<Play class="h-4 w-4" fill="currentColor" /> 播放全部
+			</Button>
+		{/snippet}
+	</PageHeader>
+	{#if tracks.length}
+		<TrackList {tracks} onplay={(i) => playMusiclist(tracks, i)} />
+	{:else}
+		<StatusMessage title="還沒有歌曲" message="到設定頁掃描音樂資料夾。" />
+	{/if}
 {/if}

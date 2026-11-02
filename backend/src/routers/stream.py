@@ -4,10 +4,22 @@ from typing import Annotated
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlmodel import Session, select
 from db import get_db
-from models.music import MusicTrack
+from fastapi.concurrency import run_in_threadpool
+from starlette.background import BackgroundTask
+from models.music import MusicTrack, StreamTrack
 from models.video import Video
 from models.file import FileModal
+from core.musicstream import (
+    get_playable_stream,
+    get_stream_lyrics,
+    invalidate_playable_stream,
+)
+from core.musiclyrics import find_lyrics, LyricsServiceError
+from core.logger import logger
+import asyncio
+import httpx
 import re
+import time
 
 stream_router = APIRouter(prefix="/stream", tags=["stream"])
 
@@ -172,12 +184,120 @@ async def head_video(
     return Response(headers=headers)
 
 
+PROXY_HEADERS = ("content-type", "content-length", "content-range", "accept-ranges")
+
+
+async def _open_upstream(url: str, headers: dict[str, str]):
+    client = httpx.AsyncClient(
+        follow_redirects=True, timeout=httpx.Timeout(15.0, read=None)
+    )
+    try:
+        upstream = await client.send(
+            client.build_request("GET", url, headers=headers), stream=True
+        )
+    except Exception:
+        await client.aclose()
+        raise
+    return client, upstream
+
+
+def _limit_range(range_header: str | None, chunk_size: int | None) -> str | None:
+    if not chunk_size:
+        return range_header
+    match = re.match(r"bytes=(\d+)-(\d+)?$", range_header or "bytes=0-")
+    if not match:
+        return range_header
+    start = int(match.group(1))
+    end = start + chunk_size - 1
+    if match.group(2):
+        end = min(end, int(match.group(2)))
+    return f"bytes={start}-{end}"
+
+
+@stream_router.get("/stream/{stream_id}")
+async def stream_online(
+    stream_id: int,
+    request: Request,
+    session: SessionDep,
+):
+    track = session.get(StreamTrack, stream_id)
+    if not track:
+        raise HTTPException(status_code=404, detail="找不到網路音訊")
+
+    range_header = request.headers.get("Range")
+
+    async def connect(refresh: bool):
+        if refresh:
+            invalidate_playable_stream(track.url)
+        playable = await run_in_threadpool(get_playable_stream, track.url)
+        wait = playable.available_at - time.time()
+        if wait > 0:
+            await asyncio.sleep(wait)
+        headers = {**playable.headers, "Accept-Encoding": "identity"}
+        request_range = _limit_range(range_header, playable.chunk_size)
+        if request_range:
+            headers["Range"] = request_range
+        return await _open_upstream(playable.url, headers)
+
+    try:
+        client, upstream = await connect(refresh=False)
+        if upstream.status_code in (403, 404, 410):
+            await upstream.aclose()
+            await client.aclose()
+            client, upstream = await connect(refresh=True)
+    except Exception as e:
+        logger.warning(f"取得網路音訊失敗 {track.url}: {str(e)}")
+        raise HTTPException(status_code=502, detail="無法取得網路音訊")
+
+    if upstream.status_code >= 400:
+        logger.warning(f"網路音訊來源回應 {upstream.status_code}: {track.url}")
+        await upstream.aclose()
+        await client.aclose()
+        raise HTTPException(status_code=502, detail="無法取得網路音訊")
+
+    async def close():
+        await upstream.aclose()
+        await client.aclose()
+
+    return StreamingResponse(
+        upstream.aiter_raw(),
+        status_code=upstream.status_code,
+        headers={
+            k: v for k, v in upstream.headers.items() if k.lower() in PROXY_HEADERS
+        },
+        background=BackgroundTask(close),
+    )
+
+
+@stream_router.get("/stream/{stream_id}/lyrics")
+async def get_stream_lyrics_api(
+    stream_id: int,
+    session: SessionDep,
+    refresh: bool = False,
+):
+    track = session.get(StreamTrack, stream_id)
+    if not track:
+        raise HTTPException(status_code=404, detail="找不到網路音訊")
+
+    if track.lyrics is None or refresh:
+        try:
+            lyrics = await run_in_threadpool(get_stream_lyrics, track.url)
+        except Exception as e:
+            logger.warning(f"取得歌詞失敗 {track.url}: {str(e)}")
+            raise HTTPException(status_code=502, detail="無法取得歌詞")
+        # 空字串代表查過但沒有, 避免每次播放都重新解析
+        track.lyrics = lyrics or ""
+        session.add(track)
+        session.commit()
+
+    return {"lyrics": track.lyrics or None}
+
+
 @stream_router.get("/file/{file_id}")
 async def get_file(
     file_id: int,
     session: SessionDep,
 ):
-    """獲取檔案"""
     file = session.exec(select(FileModal).where(FileModal.id == file_id)).first()
     if not file:
         raise HTTPException(status_code=404, detail="找不到檔案")
@@ -191,14 +311,33 @@ async def get_file(
 async def get_subtitle(
     video_id: int,
     language: str,
-):
-    """獲取影片字幕"""
-    ...
+): ...
 
 
 @stream_router.get("/music/{track_id}/lyrics")
 async def get_lyrics(
     track_id: int,
+    session: SessionDep,
+    refresh: bool = False,
 ):
-    """獲取歌詞"""
-    ...
+    music = session.get(MusicTrack, track_id)
+    if not music:
+        raise HTTPException(status_code=404, detail="找不到音樂")
+
+    if music.lyrics is None or refresh:
+        try:
+            lyrics = await run_in_threadpool(
+                find_lyrics,
+                music.title,
+                music.artist,
+                music.album,
+                music.duration,
+            )
+        except LyricsServiceError as e:
+            logger.warning(f"歌詞服務暫時無法使用: {str(e)}")
+            raise HTTPException(status_code=503, detail="歌詞服務暫時無法使用")
+        music.lyrics = lyrics or ""
+        session.add(music)
+        session.commit()
+
+    return {"lyrics": music.lyrics or None}

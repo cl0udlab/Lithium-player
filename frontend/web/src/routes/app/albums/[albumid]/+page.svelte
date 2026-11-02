@@ -1,80 +1,75 @@
 <script lang="ts">
-	import { Play } from 'lucide-svelte'
-	import type { PageData } from './$types'
 	import { getContext } from 'svelte'
-	import type { MusicTrack } from '$lib/types'
-	import Album from '$lib/image/album.svelte'
-  import { APIUrl } from '$lib/api'
+	import { Play, Shuffle, Disc3 } from 'lucide-svelte'
+	import { coverUrl } from '$lib/api'
+	import { formatDuration } from '$lib/utils/library'
+	import type { MusicTrack, PlayableTrack } from '$lib/types'
+	import Button from '$lib/components/ui/Button.svelte'
+	import TrackList from '$lib/components/ui/TrackList.svelte'
+	import type { PageData } from './$types'
 
-	export let data: PageData
-	const { album } = data
-	const playMusic = getContext<(track: MusicTrack) => void>('playMusic')
-	const playMusiclist = getContext<(track: MusicTrack) => void>('playMusiclist')
+	let { data }: { data: PageData } = $props()
 
-	function getCoverArtUrl(coverArt: string) {
-		return `${APIUrl}/file/image?image_id=${coverArt}&image_size=400`
-	}
-
-	function formatDuration(seconds: number) {
-		const minutes = Math.floor(seconds / 60)
-		const remainingSeconds = seconds % 60
-		return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
-	}
-
-	function playAlbum() {
-		playMusiclist(album.tracks)
-	}
+	const playMusiclist = getContext<(tracks: PlayableTrack[], startIndex?: number) => void>(
+		'playMusiclist'
+	)
+	const album = $derived(data.album)
+	const tracks: PlayableTrack[] = $derived(
+		((album.tracks ?? []) as any[])
+			.map((t): MusicTrack => ({ ...t, kind: 'music' }))
+			.sort(
+				(a: any, b: any) =>
+					(a.disc_number ?? 0) - (b.disc_number ?? 0) ||
+					(a.track_number ?? 0) - (b.track_number ?? 0)
+			)
+	)
+	const totalSeconds = $derived(tracks.reduce((sum, t: any) => sum + (t.duration ?? 0), 0))
+	const cover = $derived(coverUrl(album.cover_art, 600))
 </script>
 
 <svelte:head>
 	<title>{album.title} - Lithium Player</title>
 </svelte:head>
 
-<div class="p-6">
-	<div class="flex gap-8">
-		{#if album.cover_art}
-			<img
-				src={getCoverArtUrl(album.cover_art)}
-				alt={album.title}
-				class="h-64 w-64 rounded-lg object-cover shadow-xl"
-			/>
-		{:else}
-			<Album class="h-64 w-64 rounded-lg object-cover shadow-xl" />
-		{/if}
-		<div class="flex flex-col justify-between py-4">
-			<div>
-				<h1 class="mb-2 text-4xl font-bold">{album.title}</h1>
-				<p class="mb-4 text-xl opacity-75">{album.album_artist}</p>
-				<p class="text-sm opacity-75">{album.genre || '未知類型'} • {album.tracks.length} 首歌曲</p>
+<section class="mb-8 pt-4">
+	<div class="relative flex flex-col gap-6 sm:flex-row sm:items-end">
+		<div
+			class="aspect-square w-44 shrink-0 overflow-hidden rounded-2xl bg-surface-3 md:w-56"
+		>
+			{#if cover}
+				<img src={cover} alt={album.title} class="h-full w-full object-cover" />
+			{:else}
+				<Disc3 class="m-auto h-full w-1/3 text-fg-subtle" />
+			{/if}
+		</div>
+		<div class="min-w-0">
+			<p class="text-sm text-fg-muted">專輯</p>
+			<h1 class="mt-2 text-4xl font-black tracking-tight md:text-6xl">{album.title}</h1>
+			<p class="mt-3 text-sm text-fg-muted">
+				<span class="font-semibold text-fg">{album.album_artist}</span>
+				{#if album.release_date}· {album.release_date}{/if}
+				{#if album.genre}· {album.genre}{/if}
+				· {tracks.length} 首 · {formatDuration(totalSeconds)}
+			</p>
+			<div class="mt-5 flex gap-2">
+				<Button
+					variant="primary"
+					size="lg"
+					onclick={() => playMusiclist(tracks)}
+					disabled={!tracks.length}
+				>
+					<Play class="h-4 w-4" fill="currentColor" /> 播放
+				</Button>
+				<Button
+					size="lg"
+					onclick={() => playMusiclist([...tracks].sort(() => Math.random() - 0.5))}
+					disabled={!tracks.length}
+				>
+					<Shuffle class="h-4 w-4" /> 隨機
+				</Button>
 			</div>
-			<button class="btn btn-primary w-fit" on:click={playAlbum}>
-				<Play />
-				播放全部
-			</button>
 		</div>
 	</div>
+</section>
 
-	<div class="mt-8">
-		<table class="table">
-			<tbody>
-				{#each album.tracks as track, i}
-					<tr class="hover">
-						<td class="w-12">{i + 1}</td>
-						<td class="w-12">
-							<button class="btn btn-circle btn-ghost btn-sm" on:click={() => playMusic(track)}>
-								<Play size={16} />
-							</button>
-						</td>
-						<td>
-							<p class="font-medium">{track.title}</p>
-							<p class="text-sm opacity-75">{track.artist}</p>
-						</td>
-						<td class="text-right">
-							<span class="opacity-75">{formatDuration(track.duration)}</span>
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
-</div>
+<TrackList {tracks} showCover={false} showAlbum={false} onplay={(i) => playMusiclist(tracks, i)} />

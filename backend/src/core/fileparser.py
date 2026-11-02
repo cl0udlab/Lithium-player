@@ -9,7 +9,7 @@ from ebooklib import epub
 from mobi import Mobi
 from PyPDF2 import PdfReader
 from core.logger import logger
-from core.musiclyrics import get_lrclib
+from core.musiclyrics import get_lyrics
 from core.musicparser import (
     search_track,
     search_album,
@@ -49,7 +49,7 @@ class FileParser:
 
     @classmethod
     def save_cover_art_from_url(cls, image_url: str) -> str:
-        image_data = requests.get(image_url).content
+        image_data = requests.get(image_url, timeout=10).content
         image_id = str(uuid4())
         image_path = cls.IMAGES_DIR / f"{image_id}.jpg"
         with open(image_path, "wb") as f:
@@ -148,17 +148,22 @@ class FileParser:
             if cover_art and cover_art.data:
                 cover_art_id = FileParser.save_cover_art(cover_art.data)
             elif online_track and online_track.cover_art:
-                cover_art_id = FileParser.save_cover_art_from_url(
-                    online_track.cover_art
-                )
+                try:
+                    cover_art_id = FileParser.save_cover_art_from_url(
+                        online_track.cover_art
+                    )
+                except requests.exceptions.RequestException as e:
+                    logger.warning(f"下載線上封面失敗，略過 cover_art: {str(e)}")
 
-            lyrics = get_lrclib(tag.album, tag.artist, tag.title)
+            lyrics = get_lyrics(tag.album, tag.artist, tag.title, tag.duration)
 
             # TODO: 沒有時間修 以後再重構
             return {
-                "title": tag.title or online_track.title
-                if online_track
-                else file_path.stem,
+                # 原本是 (tag.title or online.title) if online_track else stem,
+                # 沒查到線上資料時連有標題標籤的檔案都會變成檔名
+                "title": tag.title
+                or (online_track.title if online_track else None)
+                or file_path.stem,
                 "duration": int(tag.duration or 0),
                 "bitrate": tag.bitrate or 0,
                 "sample_rate": tag.samplerate or 0,

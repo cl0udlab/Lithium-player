@@ -1,0 +1,6 @@
+{
+    "storages": [],
+    "scan_interval": 3600,
+    "log_level": "info",
+    "tmd_api_key": ""
+}

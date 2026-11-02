@@ -1,89 +1,86 @@
 <script lang="ts">
+	import { getContext } from 'svelte'
+	import { Tv, Play } from 'lucide-svelte'
+	import { coverUrl } from '$lib/api'
+	import type { Video } from '$lib/types'
 	import type { PageData } from './$types'
+
 	let { data }: { data: PageData } = $props()
-  	import { APIUrl } from '$lib/api'
-  const { animes } = data
-  function getCoverUrl(coverId: string | null) {
-		if (!coverId) return '/placeholder.png'
-		return `${APIUrl}/file/image?image_id=${coverId}&image_size=500`
-	}
+
+	const playVideo = getContext<(video: Video) => void>('playVideo')
+	const anime: any = $derived(data.animes)
+	const cover = $derived(coverUrl(anime.cover_image, 600))
+	const episodes: any[] = $derived(
+		[...(anime.episodes ?? [])].sort((a, b) => (a.episode_number ?? 0) - (b.episode_number ?? 0))
+	)
 </script>
 
-<div class="container mx-auto px-4 py-8">
-	<div class="flex flex-col gap-8 md:flex-row">
-		<div class="w-full md:w-1/4">
-			{#if animes.cover_image}
-				<img src={animes.cover_image} alt={animes.title} class="w-full rounded-lg shadow-lg" />
+<svelte:head>
+	<title>{anime.title} - Lithium Player</title>
+</svelte:head>
+
+<section class="mb-8 pt-4">
+	<div class="relative flex flex-col gap-8 md:flex-row">
+		<div class="aspect-[3/4] w-44 shrink-0 overflow-hidden rounded-2xl bg-surface-3 md:w-56">
+			{#if cover}
+				<img src={cover} alt={anime.title} class="h-full w-full object-cover" />
 			{:else}
-				<div class="flex aspect-[3/4] w-full items-center justify-center rounded-lg bg-gray-200">
-					<span class="text-gray-400">無封面</span>
-				</div>
+				<Tv class="m-auto h-full w-1/3 text-fg-subtle" />
 			{/if}
 		</div>
-
-		<div class="flex-1">
-			<h1 class="mb-4 text-3xl font-bold">{animes.title}</h1>
-			{#if animes.original_title}
-				<h2 class="mb-4 text-xl text-gray-600">{animes.original_title}</h2>
+		<div class="min-w-0 flex-1">
+			<p class="text-sm text-fg-muted">動畫</p>
+			<h1 class="mt-2 text-4xl font-black tracking-tight">{anime.title}</h1>
+			{#if anime.original_title}
+				<p class="mt-1 text-lg text-fg-muted">{anime.original_title}</p>
 			{/if}
-
-			<div class="mb-4">
-				<p class="text-gray-700">{animes.description || '暫無簡介'}</p>
-			</div>
-
-			<div class="mb-4 grid grid-cols-2 gap-4">
-				<div>
-					<span class="font-semibold">放送日期：</span>
-					<span>{animes.release_date}</span>
-				</div>
-				{#if animes.studio}
-					<div>
-						<span class="font-semibold">製作公司：</span>
-						<span>{animes.studio}</span>
-					</div>
-				{/if}
-				{#if animes.author}
-					<div>
-						<span class="font-semibold">原作：</span>
-						<span>{animes.author}</span>
-					</div>
-				{/if}
-			</div>
-
-
-			<div class="mb-4 flex flex-wrap gap-2">
-				{#each animes.tags as tag}
-					<span class="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800">
-						{tag.name}
-					</span>
-				{/each}
-			</div>
-		</div>
-	</div>
-
-
-	<div class="mt-8">
-		<h2 class="mb-4 text-2xl font-bold">劇集列表</h2>
-		<div class="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
-			{#each animes.episodes as episode}
-				<div class="overflow-hidden rounded-lg bg-white shadow">
-					{#if episode.thumbnail}
-						<img
-							src={getCoverUrl(episode.thumbnail)}
-							alt={episode.title}
-							class="aspect-video w-full object-cover"
-						/>
-					{:else}
-						<div class="aspect-video w-full bg-gray-200"></div>
+			<dl class="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+				{#each [['放送日期', anime.release_date], ['製作公司', anime.studio], ['原作', anime.author]] as [label, value]}
+					{#if value}
+						<div>
+							<dt class="text-xs text-fg-subtle">{label}</dt>
+							<dd>{value}</dd>
+						</div>
 					{/if}
-					<div class="p-4">
-						<h3 class="font-semibold">第 {episode.episode_number} 集</h3>
-						{#if episode.title}
-							<p class="text-sm text-gray-600">{episode.title}</p>
-						{/if}
-					</div>
+				{/each}
+			</dl>
+			<p class="mt-4 max-w-3xl text-sm leading-relaxed text-fg-muted">
+				{anime.description || '暫無簡介'}
+			</p>
+			{#if anime.tags?.length}
+				<div class="mt-4 flex flex-wrap gap-2">
+					{#each anime.tags as tag (tag.id ?? tag.name)}
+						<span class="rounded-full border border-line/10 bg-surface-2 px-3 py-1 text-xs text-fg-muted">
+							{tag.name}
+						</span>
+					{/each}
 				</div>
-			{/each}
+			{/if}
 		</div>
 	</div>
+</section>
+
+<h2 class="mb-4 text-xl font-bold tracking-tight">劇集 · {episodes.length}</h2>
+<div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+	{#each episodes as episode (episode.id)}
+		<button class="group text-left" onclick={() => playVideo(episode)}>
+			<div class="relative aspect-video overflow-hidden rounded-xl bg-surface-2">
+				{#if episode.thumbnail}
+					<img
+						src={coverUrl(episode.thumbnail, 480)}
+						alt=""
+						loading="lazy"
+						class="h-full w-full object-cover"
+					/>
+				{/if}
+				<div class="absolute inset-0 grid place-items-center bg-black/0 transition-colors group-hover:bg-black/40">
+					<Play class="h-8 w-8 text-white opacity-0 transition-opacity group-hover:opacity-100" fill="currentColor" />
+				</div>
+			</div>
+			<p class="mt-2 text-sm font-semibold">第 {episode.episode_number} 集</p>
+			{#if episode.title}
+				<p class="truncate text-xs text-fg-muted">{episode.title}</p>
+			{/if}
+		</button>
+	{/each}
 </div>

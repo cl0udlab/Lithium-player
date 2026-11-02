@@ -1,24 +1,23 @@
 <script lang="ts">
-	import { Play } from 'lucide-svelte'
-	import type { PageData } from './$types'
-	import { goto } from '$app/navigation'
 	import { getContext } from 'svelte'
-	import type { MusicTrack } from '$lib/types'
-	import Album from '$lib/image/album.svelte'
-  import { APIUrl } from '$lib/api'
+	import { coverUrl } from '$lib/api'
+	import { fetchAlbumTracks } from '$lib/utils/library'
+	import type { PlayableTrack } from '$lib/types'
+	import MediaCard from '$lib/components/ui/MediaCard.svelte'
+	import PageHeader from '$lib/components/ui/PageHeader.svelte'
+	import StatusMessage from '$lib/components/ui/StatusMessage.svelte'
+	import type { PageData } from './$types'
 
-	export let data: PageData
-	const { albums, error, status } = data
-	const playMusic = getContext<(track: MusicTrack) => void>('playMusic')
+	let { data }: { data: PageData } = $props()
 
-	function getCoverArtUrl(coverArt: string) {
-		return `${APIUrl}/file/image?image_id=${coverArt}&image_size=400`
-	}
+	const playMusiclist = getContext<(tracks: PlayableTrack[], startIndex?: number) => void>(
+		'playMusiclist'
+	)
+	const albums: any[] = $derived(data.albums ?? [])
 
-	function playAlbum(album: any) {
-		if (album.tracks && album.tracks.length > 0) {
-			playMusic(album.tracks[0])
-		}
+	async function playAlbum(albumId: number) {
+		const tracks = await fetchAlbumTracks(albumId)
+		if (tracks.length) playMusiclist(tracks)
 	}
 </script>
 
@@ -26,43 +25,24 @@
 	<title>專輯 - Lithium Player</title>
 </svelte:head>
 
-<div class="grid grid-cols-1 gap-5 p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-	{#each albums as album}
-		<div class="overflow-hidden rounded-lg bg-base-200 shadow-lg transition-shadow hover:shadow-xl">
-			<div
-				class="group relative cursor-pointer"
-				role="button"
-				tabindex="0"
-				on:click={() => goto(`/app/albums/${album.id}`)}
-				on:keydown={(e) => e.key === 'Enter' && goto(`/app/albums/${album.id}`)}
-			>
-				{#if album.cover_art}
-					<img
-						src={getCoverArtUrl(album.cover_art)}
-						alt={album.title}
-						class="aspect-square w-full object-cover"
-					/>
-				{:else}
-					<Album class="aspect-square w-full object-cover" />
-				{/if}
-				<button
-					class="btn btn-circle btn-primary absolute bottom-4 right-0 opacity-0 transition-opacity group-hover:opacity-100"
-					on:click|stopPropagation={() => playAlbum(album)}
-				>
-					<Play />
-				</button>
-			</div>
-			<div class="p-4">
-				<button
-					class="cursor-pointer truncate text-left text-lg font-semibold hover:text-primary"
-					on:click={() => goto(`/app/albums/${album.id}`)}
-					on:keydown={(e) => e.key === 'Enter' && goto(`/app/albums/${album.id}`)}
-				>
-					{album.title}
-				</button>
-				<p class="truncate text-sm text-gray-500">{album.album_artist}</p>
-				<p class="truncate text-xs text-gray-400">{album.tracks?.length || 0} 首歌曲</p>
-			</div>
+{#if data.error}
+	<StatusMessage kind="error" title="載入失敗" message={data.error} retry={data.status === 500} />
+{:else}
+	<PageHeader title="專輯" subtitle="{albums.length} 張" />
+	{#if albums.length}
+		<div class="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+			{#each albums as album (album.id)}
+				<MediaCard
+					title={album.title}
+					subtitle={album.album_artist}
+					meta="{album.tracks?.length ?? album.total_tracks ?? 0} 首"
+					cover={coverUrl(album.cover_art, 400)}
+					href="/app/albums/{album.id}"
+					onplay={() => playAlbum(album.id)}
+				/>
+			{/each}
 		</div>
-	{/each}
-</div>
+	{:else}
+		<StatusMessage title="還沒有專輯" message="到設定頁掃描音樂資料夾。" />
+	{/if}
+{/if}

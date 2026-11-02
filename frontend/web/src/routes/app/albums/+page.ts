@@ -14,7 +14,6 @@ export const load = (async ({ fetch }) => {
 		}
 
 		const albums = await response.json()
-		console.log(albums)
 		return {
 			albums,
 			error: null,

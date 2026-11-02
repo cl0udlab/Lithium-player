@@ -1,75 +1,43 @@
 <script lang="ts">
-	import type { PageData } from './$types'
 	import { getContext } from 'svelte'
+	import { Clapperboard } from 'lucide-svelte'
+	import { coverUrl } from '$lib/api'
+	import { formatDuration } from '$lib/utils/library'
 	import type { Video } from '$lib/types'
-	import { Play } from 'lucide-svelte'
-  import { APIUrl } from '$lib/api'
+	import MediaCard from '$lib/components/ui/MediaCard.svelte'
+	import PageHeader from '$lib/components/ui/PageHeader.svelte'
+	import StatusMessage from '$lib/components/ui/StatusMessage.svelte'
+	import type { PageData } from './$types'
 
-	export let data
-	const { videos, error, status } = data
+	let { data }: { data: PageData } = $props()
+
 	const playVideo = getContext<(video: Video) => void>('playVideo')
-
-	function handlePlay(video: Video) {
-		playVideo(video)
-	}
-
-	function getDuration(seconds: number) {
-		const hours = Math.floor(seconds / 3600)
-		const minutes = Math.floor((seconds % 3600) / 60)
-		const remainingSeconds = Math.floor(seconds % 60)
-
-		if (hours > 0) {
-			return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
-		}
-		return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
-	}
-	function getCoverArtUrl(coverArt: string) {
-		return `${APIUrl}/file/image?image_id=${coverArt}&image_size=400`
-	}
+	const videos: any[] = $derived(data.videos ?? [])
 </script>
 
 <svelte:head>
 	<title>影片 - Lithium Player</title>
 </svelte:head>
 
-{#if error}
-	<div class="flex flex-col items-center justify-center p-8 text-error">
-		<h2 class="mb-4 text-2xl font-bold">載入失敗</h2>
-		<p class="text-lg">{error}</p>
-		{#if status === 500}
-			<button type="button" class="btn btn-error mt-4" onclick={() => window.location.reload()}>
-				重試
-			</button>
-		{/if}
-	</div>
+{#if data.error}
+	<StatusMessage kind="error" title="載入失敗" message={data.error} retry={data.status === 500} />
 {:else}
-	<div class="grid grid-cols-1 gap-5 p-4 md:grid-cols-2 lg:grid-cols-4">
-		{#each videos as video}
-			<div class="card bg-base-200 shadow-xl">
-				<figure class="relative aspect-video w-full overflow-hidden">
-					{#if video.thumbnail}
-						<img
-							src={getCoverArtUrl(video.thumbnail)}
-							alt={video.title}
-							class="h-full w-full object-cover"
-						/>
-					{:else}
-						<div class="h-full w-full bg-base-300"></div>
-					{/if}
-					<button class="btn btn-circle btn-primary absolute" onclick={() => handlePlay(video)}>
-						<Play size={24} />
-					</button>
-				</figure>
-				<div class="card-body">
-					<h2 class="card-title truncate">{video.title}</h2>
-					{#if video.duration}
-						<p class="text-sm opacity-75">{getDuration(video.duration)}</p>
-					{/if}
-					{#if video.description}
-						<p class="line-clamp-2 text-sm opacity-75">{video.description}</p>
-					{/if}
-				</div>
-			</div>
-		{/each}
-	</div>
+	<PageHeader title="影片" subtitle="{videos.length} 部" />
+	{#if videos.length}
+		<div class="grid grid-cols-1 gap-x-5 gap-y-7 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+			{#each videos as video (video.id)}
+				<MediaCard
+					shape="video"
+					title={video.title}
+					subtitle={video.description}
+					meta={formatDuration(video.duration)}
+					cover={coverUrl(video.thumbnail, 640)}
+					placeholder={Clapperboard}
+					onplay={() => playVideo(video)}
+				/>
+			{/each}
+		</div>
+	{:else}
+		<StatusMessage icon={Clapperboard} title="還沒有影片" message="到設定頁掃描影片資料夾。" />
+	{/if}
 {/if}

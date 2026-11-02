@@ -1,31 +1,35 @@
 <script lang="ts">
+	import { Tv } from 'lucide-svelte'
+	import { coverUrl } from '$lib/api'
+	import MediaCard from '$lib/components/ui/MediaCard.svelte'
+	import PageHeader from '$lib/components/ui/PageHeader.svelte'
+	import StatusMessage from '$lib/components/ui/StatusMessage.svelte'
 	import type { PageData } from './$types'
-	import { APIUrl } from '$lib/api'
 
 	let { data }: { data: PageData } = $props()
 
-	function getCoverUrl(coverId: string | null) {
-		if (!coverId) return '/placeholder.png'
-		return `${APIUrl}/file/image?image_id=${coverId}&image_size=300`
-	}
+	const animes: any[] = $derived(data.animes ?? [])
 </script>
 
-<div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-	{#each data.animes as anime}
-		<div class="card bg-base-200 shadow-xl transition-transform hover:scale-105">
-			<figure class="h-48">
-				{#if anime.cover_image}
-					<img
-						src={getCoverUrl(anime.cover_image)}
-						alt={anime.title}
-						class="h-full w-full object-cover"
-					/>
-				{/if}
-			</figure>
-			<div class="card-body">
-				<h2 class="card-title text-lg">{anime.title}</h2>
-				<p class="line-clamp-2 text-sm opacity-75">{anime.description}</p>
-			</div>
-		</div>
-	{/each}
-</div>
+<svelte:head>
+	<title>動畫 - Lithium Player</title>
+</svelte:head>
+
+<PageHeader title="動畫" subtitle="{animes.length} 部" />
+{#if animes.length}
+	<div class="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+		{#each animes as anime (anime.id)}
+			<MediaCard
+				shape="portrait"
+				title={anime.title}
+				subtitle={anime.release_date}
+				meta={anime.total_episodes ? `${anime.total_episodes} 集` : null}
+				cover={coverUrl(anime.cover_image, 400)}
+				href="/app/anime/{anime.id}"
+				placeholder={Tv}
+			/>
+		{/each}
+	</div>
+{:else}
+	<StatusMessage icon={Tv} title="還沒有動畫" message="掃描影片資料夾時會自動辨識動畫。" />
+{/if}

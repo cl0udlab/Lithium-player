@@ -1,112 +1,72 @@
 <script lang="ts">
-	export let data
+	import { FileText, FileImage, FileMusic, FileVideo, File, BookOpen } from 'lucide-svelte'
 	import type { Filei } from '$lib/types'
-	import { FileText, FileImage, FileMusic, FileVideo, File } from 'lucide-svelte'
 	import FilePreview from '$lib/components/Filepreview.svelte'
-	import { onMount } from 'svelte'
+	import PageHeader from '$lib/components/ui/PageHeader.svelte'
+	import StatusMessage from '$lib/components/ui/StatusMessage.svelte'
+	import type { PageData } from './$types'
 
-	const { files, error, status } = data
+	let { data }: { data: PageData } = $props()
 
-	function getFileIcon(format: string) {
-		switch (format.toLowerCase()) {
-			case 'image':
-				return FileImage
-			case 'audio':
-				return FileMusic
-			case 'video':
-				return FileVideo
-			case 'text':
-				return FileText
-			default:
-				return File
-		}
+	const files: any[] = $derived(data.files ?? [])
+	let selected = $state<Filei | null>(null)
+
+	const icons: Record<string, typeof File> = {
+		image: FileImage,
+		audio: FileMusic,
+		video: FileVideo,
+		text: FileText,
+		txt: FileText,
+		pdf: BookOpen,
+		epub: BookOpen,
+		mobi: BookOpen
 	}
 
 	function formatFileSize(bytes: number) {
-		const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-		if (bytes === 0) return '0 Byte'
+		if (!bytes) return '0 B'
+		const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
 		const i = Math.floor(Math.log(bytes) / Math.log(1024))
-		return Math.round(bytes / Math.pow(1024, i)) + ' ' + sizes[i]
+		return `${(bytes / Math.pow(1024, i)).toFixed(i ? 1 : 0)} ${sizes[i]}`
 	}
-	let showPreview = false
-	let selectedFile: Filei | null = null
-
-	function openPreview(file: Filei) {
-		selectedFile = file
-		showPreview = true
-	}
-
-	function handelEsc(e: KeyboardEvent) {
-		if (e.key === 'Escape') {
-			showPreview = false
-		}
-	}
-
-	onMount(() => {
-		window.addEventListener('keydown', handelEsc)
-		return () => {
-			window.removeEventListener('keydown', handelEsc)
-		}
-	})
 </script>
 
 <svelte:head>
 	<title>檔案 - Lithium Player</title>
 </svelte:head>
 
-{#if showPreview && selectedFile !== null}
-	<FilePreview
-		filePath={selectedFile.filepath}
-		fileType={selectedFile.file_format}
-		fileId={selectedFile.id}
-		onClose={() => (showPreview = false)}
-	/>
-{/if}
+<FilePreview bind:file={selected} />
 
-{#if error}
-	<div class="flex flex-col items-center justify-center p-8 text-error">
-		<h2 class="mb-4 text-2xl font-bold">載入失敗</h2>
-		<p class="text-lg">{error}</p>
-		{#if status === 500}
-			<button type="button" class="btn btn-error mt-4" onclick={() => window.location.reload()}>
-				重試
-			</button>
-		{/if}
-	</div>
+{#if data.error}
+	<StatusMessage kind="error" title="載入失敗" message={data.error} retry={data.status === 500} />
 {:else}
-	<div class="grid grid-cols-1 gap-5 p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-		{#each files as file}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div
-				class="overflow-hidden rounded-lg bg-base-200 shadow-lg transition-shadow hover:shadow-xl"
-				onclick={() => openPreview(file)}
-			>
-				<div
-					class="overflow-hidden rounded-lg bg-base-200 shadow-lg transition-shadow hover:shadow-xl"
+	<PageHeader title="檔案" subtitle="{files.length} 個文件" />
+	{#if files.length}
+		<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+			{#each files as file (file.id)}
+				{@const Icon = icons[file.file_format?.toLowerCase()] ?? File}
+				<button
+					class="flex items-center gap-4 rounded-xl border border-line/5 bg-surface p-4 text-left transition-colors hover:border-line/15 hover:bg-surface-2"
+					onclick={() => (selected = file)}
 				>
-					<div class="group relative flex items-center justify-center p-6">
-						<svelte:component
-							this={getFileIcon(file.file_format)}
-							size={64}
-							class="text-gray-600"
-						/>
+					<div class="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
+						<Icon class="h-6 w-6" />
 					</div>
-					<div class="p-4">
-						<h3 class="truncate text-lg font-semibold">{file.name}</h3>
-						<p class="truncate text-sm text-gray-500">{formatFileSize(file.size)}</p>
-						{#if file.author}
-							<p class="truncate text-xs text-gray-400">作者: {file.author}</p>
-						{/if}
-						{#if file.publisher}
-							<p class="truncate text-xs text-gray-400">出版商: {file.publisher}</p>
-						{/if}
-						{#if file.pages}
-							<p class="truncate text-xs text-gray-400">頁數: {file.pages}</p>
+					<div class="min-w-0">
+						<p class="truncate text-sm font-semibold">{file.name}</p>
+						<p class="truncate text-xs text-fg-muted">
+							{file.file_format?.toUpperCase()} · {formatFileSize(file.size)}
+							{#if file.pages}· {file.pages} 頁{/if}
+						</p>
+						{#if file.author || file.publisher}
+							<p class="mt-0.5 truncate text-xs text-fg-subtle">
+								{[file.author, file.publisher].filter(Boolean).join(' · ')}
+							</p>
 						{/if}
 					</div>
-				</div>
-			</div>
-		{/each}
-	</div>
+				</button>
+			{/each}
+		</div>
+	{:else}
+		<StatusMessage icon={FileText} title="還沒有文件" message="掃描時遇到的 PDF / TXT / EPUB 會出現在這裡。" />
+	{/if}
 {/if}

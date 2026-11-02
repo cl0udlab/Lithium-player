@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store'
-import type { Playlist, MusicTrack } from '$lib/types'
+import type { Playlist, PlayableTrack } from '$lib/types'
 
 const initplaylist: Playlist = {
 	tracks: []
@@ -33,7 +33,7 @@ function createPlayerlistStore() {
 		},
 		gettracks: () => {
 			syncfromlocal()
-			let tracks: MusicTrack[] = []
+			let tracks: PlayableTrack[] = []
 			subscribe((state) => {
 				tracks = state?.tracks || []
 			})()
@@ -43,7 +43,7 @@ function createPlayerlistStore() {
 			localStorage.setItem('stars', JSON.stringify(initplaylist))
 			set(initplaylist)
 		},
-		addmusic: (track: MusicTrack) => {
+		addmusic: (track: PlayableTrack) => {
 			update((state) => {
 				if (!state) {
 					return { tracks: [track] }

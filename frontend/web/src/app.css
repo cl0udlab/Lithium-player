@@ -1,3 +1,101 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@import 'tailwindcss';
+
+:root {
+	color-scheme: dark;
+	--bg: rgb(9 9 11);
+	--surface: rgb(19 19 23);
+	--surface-2: rgb(28 28 34);
+	--surface-3: rgb(40 40 48);
+	--fg: rgb(237 237 240);
+	--fg-muted: rgb(161 161 170);
+	--fg-subtle: rgb(113 113 122);
+	--line: rgb(255 255 255);
+
+	--accent: rgb(255 61 104);
+	--accent-hover: rgb(255 92 128);
+	--accent-fg: rgb(255 255 255);
+	--danger: rgb(239 68 68);
+	--success: rgb(34 197 94);
+}
+
+@theme inline {
+	--color-bg: var(--bg);
+	--color-surface: var(--surface);
+	--color-surface-2: var(--surface-2);
+	--color-surface-3: var(--surface-3);
+	--color-fg: var(--fg);
+	--color-fg-muted: var(--fg-muted);
+	--color-fg-subtle: var(--fg-subtle);
+	--color-line: var(--line);
+	--color-accent: var(--accent);
+	--color-accent-hover: var(--accent-hover);
+	--color-accent-fg: var(--accent-fg);
+	--color-danger: var(--danger);
+	--color-success: var(--success);
+}
+
+@theme {
+	--font-sans:
+		Inter, 'Noto Sans TC', 'Noto Sans JP', 'PingFang TC', 'Microsoft JhengHei', system-ui,
+		sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+
+	--animate-fade-in: fade-in 0.3s ease-out;
+	--animate-slide-up: slide-up 0.35s ease-out both;
+
+	@keyframes fade-in {
+		from {
+			opacity: 0;
+		}
+	}
+	@keyframes slide-up {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+	}
+}
+
+@utility no-scrollbar {
+	scrollbar-width: none;
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}
+
+@layer base {
+	html,
+	body {
+		@apply bg-bg font-sans text-fg antialiased;
+	}
+
+	::selection {
+		@apply bg-accent/40 text-fg;
+	}
+
+	:focus-visible:where(:not(input, textarea, select)) {
+		@apply ring-2 ring-accent/70 ring-offset-2 ring-offset-bg outline-hidden;
+	}
+
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: var(--surface-3) transparent;
+	}
+
+	button:not(:disabled),
+	[role='button']:not(:disabled) {
+		cursor: pointer;
+	}
+
+	dialog {
+		@apply m-auto max-h-[calc(100vh-4rem)] border-0 bg-transparent p-0 text-fg;
+	}
+	dialog::backdrop {
+		background: transparent;
+	}
+
+	[popover] {
+		@apply m-0 border-0 bg-transparent p-0 text-fg;
+		inset: auto;
+	}
+}

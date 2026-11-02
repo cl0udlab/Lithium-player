@@ -9,13 +9,16 @@ from models.file import FileModal
 from sqlmodel import Session, desc, select, or_
 from sqlalchemy.orm import selectinload
 from db import get_db
-from core.syncfile import sync_one_file, sync_dir_file
+from core.syncfile import sync_one_file
+from core.scanner import scanner
 from pathlib import Path
 from core.setting import load_setting
 from PIL import Image
 import io
 from pydantic import BaseModel
-from core.musicstream import detect_url_type, MusicStream
+from fastapi.concurrency import run_in_threadpool
+from core.musicstream import save_stream_tracks
+from core.logger import logger
 
 
 class FilePathRequest(BaseModel):
@@ -205,20 +208,29 @@ async def get_file(
 async def parse_one_file(request: FilePathRequest):
     """解析1個檔案"""
     try:
-        data = sync_one_file(Path(request.file_path))
+        data = await run_in_threadpool(sync_one_file, Path(request.file_path))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return data
 
 
-@file_router.post("/scanall")
+@file_router.post("/scanall", status_code=202)
 async def scan_all_files(request: FilePathRequest):
-    """掃描所有檔案"""
-    if Path(request.file_path):
-        sync_dir_file(Path(request.file_path))
+    if request.file_path:
+        paths = [Path(request.file_path)]
     else:
-        for dir in load_setting().storages:
-            sync_dir_file(dir.path)
+        paths = [Path(storage.path) for storage in load_setting().storages]
+    for path in paths:
+        if not path.is_dir():
+            raise HTTPException(status_code=400, detail=f"不是資料夾: {path}")
+    if not scanner.start(paths):
+        raise HTTPException(status_code=409, detail="已經有掃描在進行中")
+    return scanner.status()
+
+
+@file_router.get("/scanall/status")
+async def scan_status():
+    return scanner.status()
 
 
 @file_router.get("/searchmusic")
@@ -309,25 +321,18 @@ class URLTrackRequest(BaseModel):
     url: str
 
 
-@file_router.post("/urltrack")
+@file_router.post("/urltrack", response_model=list[StreamTrack])
 async def url_track(session: SessionDep, request: URLTrackRequest):
-    """解析網址"""
-    url = request.url
-    type = detect_url_type(url)
-    if type == "unknown":
+    try:
+        return await run_in_threadpool(save_stream_tracks, request.url, session)
+    except Exception as e:
+        logger.warning(f"解析網址失敗 {request.url}: {str(e)}")
         raise HTTPException(status_code=400, detail="無法解析網址")
-    sdata = MusicStream(url).get_stream_info()
-    stream_track = StreamTrack(
-        title=sdata.title,
-        url=url,
-        stream_url=sdata.url,
-        platform=type,
-        duration=sdata.duration,
-        cover_art=sdata.thumbnail,
-    )
-    session.add(stream_track)
-    session.commit()
-    return stream_track
+
+
+@file_router.get("/streamtracks", response_model=list[StreamTrack])
+async def get_stream_tracks(session: SessionDep):
+    return session.exec(select(StreamTrack).order_by(desc(StreamTrack.id))).all()
 
 
 @file_router.delete("/{file_id}")

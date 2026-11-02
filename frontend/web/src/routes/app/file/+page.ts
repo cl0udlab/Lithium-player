@@ -14,7 +14,6 @@ export const load = (async ({ fetch }) => {
 		}
 
 		const files = await response.json()
-		console.log(files)
 		return {
 			files,
 			error: null,

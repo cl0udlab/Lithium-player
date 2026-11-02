@@ -1,6 +1,6 @@
 FROM python:3.12-bookworm as build
 
-RUN pip install poetry==1.8.5
+RUN pip install poetry==2.5.1
 
 ENV POETRY_CACHE_DIR=/tmp/poetry_cache \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+COPY --from=denoland/deno:bin-2.5.6 /deno /usr/local/bin/deno
 
 WORKDIR /app
 

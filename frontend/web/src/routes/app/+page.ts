@@ -14,7 +14,6 @@ export const load = (async ({ fetch }) => {
 		}
 
 		const info = await responsemusic.json()
-		console.log(info)
 		return {
 			info,
 			error: null,

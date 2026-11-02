@@ -1,72 +1,88 @@
 <script lang="ts">
-	import type { PageData } from './$types'
-	import { getContext } from 'svelte'
-	import { APIUrl } from '$lib/api'
-	import Cookies from 'js-cookie'
 	import { goto } from '$app/navigation'
+	import { Plus, ListMusic } from 'lucide-svelte'
+	import { apiFetch } from '$lib/api'
+	import { toast } from '$lib/stores/toast.svelte'
+	import Button from '$lib/components/ui/Button.svelte'
+	import Dialog from '$lib/components/ui/Dialog.svelte'
+	import Input from '$lib/components/ui/Input.svelte'
+	import MediaCard from '$lib/components/ui/MediaCard.svelte'
+	import PageHeader from '$lib/components/ui/PageHeader.svelte'
+	import StatusMessage from '$lib/components/ui/StatusMessage.svelte'
+	import type { PageData } from './$types'
 
 	let { data }: { data: PageData } = $props()
-	const { playlist, error, status } = data
-	const playMusiclist = getContext('playMusiclist')
-	let showDialog = $state(false)
-	let newPlaylistName = $state('')
 
-	async function createPlaylist() {
-		const token = Cookies.get('access_token')
-		const response = await fetch(`${APIUrl}/playlist/playlist`, {
+	const playlists: any[] = $derived(Array.isArray(data.playlist) ? data.playlist : [])
+	let dialogOpen = $state(false)
+	let name = $state('')
+	let creating = $state(false)
+
+	async function createPlaylist(e?: SubmitEvent) {
+		e?.preventDefault()
+		if (!name.trim()) return
+		creating = true
+		const response = await apiFetch('/playlist/playlist', {
 			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${token}`,
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ name: newPlaylistName })
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name: name.trim() })
 		})
-
-		if (response.ok) {
-			location.reload()
+		creating = false
+		if (!response.ok) {
+			toast.error('建立失敗', `HTTP ${response.status}`)
+			return
 		}
-		showDialog = false
-		newPlaylistName = ''
+		const created = await response.json()
+		dialogOpen = false
+		name = ''
+		toast.success('已建立播放清單', created.name)
+		goto(`/app/playlist/${created.id}`)
 	}
 </script>
 
-<div class="mb-8">
-	<div class="mb-4 flex items-center justify-between">
-		<h1 class="text-2xl font-bold">播放清單</h1>
-		<button class="btn btn-primary" onclick={() => (showDialog = true)}> 新增播放清單 </button>
-	</div>
-	{#if showDialog}
-		<div class="modal modal-open">
-			<div class="modal-box">
-				<h3 class="text-lg font-bold">新增播放清單</h3>
-				<input
-					type="text"
-					placeholder="輸入播放清單名稱"
-					class="input input-bordered mt-4 w-full"
-					onkeydown={(e) => e.key === 'Enter' && createPlaylist()}
-					bind:value={newPlaylistName}
+<svelte:head>
+	<title>播放清單 - Lithium Player</title>
+</svelte:head>
+
+{#if data.error}
+	<StatusMessage kind="error" title="載入失敗" message={data.error} retry={data.status === 500} />
+{:else}
+	<PageHeader title="播放清單" subtitle="{playlists.length} 個">
+		{#snippet actions()}
+			<Button variant="primary" onclick={() => (dialogOpen = true)}>
+				<Plus class="h-4 w-4" /> 新增播放清單
+			</Button>
+		{/snippet}
+	</PageHeader>
+
+	{#if playlists.length}
+		<div class="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+			{#each playlists as playlist (playlist.id)}
+				<MediaCard
+					title={playlist.name}
+					subtitle={playlist.description ?? '播放清單'}
+					href="/app/playlist/{playlist.id}"
+					placeholder={ListMusic}
 				/>
-				<div class="modal-action">
-					<button class="btn" onclick={() => (showDialog = false)}>取消</button>
-					<button class="btn btn-primary" onclick={createPlaylist}>確定</button>
-				</div>
-			</div>
+			{/each}
 		</div>
+	{:else}
+		<StatusMessage
+			icon={ListMusic}
+			title="還沒有播放清單"
+			message="建立一個播放清單, 可以混合本機音樂和 YouTube / Bilibili 網址。"
+		/>
 	{/if}
-	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-		{#each playlist as playlist}
-			<button
-				class="card card-compact bg-base-200 shadow-xl transition-all hover:shadow-2xl"
-				onclick={() => goto(`/app/playlist/${playlist.id}`)}
-				onkeydown={(e) => e.key === 'Enter' && goto(`/app/playlist/${playlist.id}`)}
-			>
-				<div class="card-body">
-					<h2 class="card-title">{playlist.name}</h2>
-					{#if playlist.description}
-						<p class="text-sm opacity-75">{playlist.description}</p>
-					{/if}
-				</div>
-			</button>
-		{/each}
-	</div>
-</div>
+{/if}
+
+<Dialog bind:open={dialogOpen} title="新增播放清單">
+	<form id="create-playlist" onsubmit={createPlaylist}>
+		<Input bind:value={name} placeholder="播放清單名稱" autofocus />
+	</form>
+	{#snippet footer()}
+		<Button variant="ghost" onclick={() => (dialogOpen = false)}>取消</Button>
+		<Button variant="primary" type="submit" form="create-playlist" disabled={!name.trim() || creating}>
+			建立
+		</Button>
+	{/snippet}
+</Dialog>

@@ -16,6 +16,8 @@ from models import (
     Track_type,
     MusicTrackFile,
 )
+from fastapi.concurrency import run_in_threadpool
+from core.musicstream import save_stream_tracks
 from core.logger import logger
 
 playlist_router = APIRouter(prefix="/playlist", tags=["playlist"])
@@ -33,6 +35,9 @@ class TrackResponse(BaseModel):
     id: int
     title: str
     artist: Optional[str] = None
+    album: Optional[str] = None
+    cover_art: Optional[str] = None
+    lyrics: Optional[str] = None
     file: Optional[MusicTrackFile] = None
 
 
@@ -75,7 +80,7 @@ async def get_playlist(
         raise HTTPException(status_code=404, detail="找不到播放清單")
 
     tracks = []
-    for track in playlist.tracks:
+    for track in sorted(playlist.tracks, key=lambda t: t.position):
         if track.track_type == Track_type.track and track.track:
             tracks.append(
                 PlaylistTrackResponse(
@@ -86,6 +91,9 @@ async def get_playlist(
                         id=track.track.id,
                         title=track.track.title,
                         artist=track.track.artist,
+                        album=track.track.album,
+                        cover_art=track.track.cover_art,
+                        lyrics=track.track.lyrics,
                         file=track.track.file,
                     ),
                 )
@@ -125,12 +133,39 @@ async def create_playlist(
     playlist = Playlist(name=req.name, user_id=user.id)
     session.add(playlist)
     session.commit()
+    # commit 後屬性會過期, 不 refresh 的話回傳會是 {}
+    session.refresh(playlist)
     return playlist
 
 
 class PlaylistTrackInput(BaseModel):
     track_id: Optional[int] = None
     stream_id: Optional[int] = None
+
+
+def _track_in_playlist(
+    session: Session,
+    playlist_id: int,
+    track_id: Optional[int],
+    stream_id: Optional[int],
+) -> bool:
+    stmt = select(PlaylistTrack).where(PlaylistTrack.playlist_id == playlist_id)
+    if track_id:
+        stmt = stmt.where(PlaylistTrack.track_id == track_id)
+    elif stream_id:
+        stmt = stmt.where(PlaylistTrack.streamtrack_id == stream_id)
+    else:
+        return False
+    return session.exec(stmt).first() is not None
+
+
+def _next_position(session: Session, playlist_id: int) -> int:
+    max_position = session.exec(
+        select(func.max(PlaylistTrack.position)).where(
+            PlaylistTrack.playlist_id == playlist_id
+        )
+    ).first()
+    return (max_position or 0) + 1
 
 
 @playlist_router.post("/playlist/{playlist_id}")
@@ -150,31 +185,14 @@ async def add_track_to_playlist(
         ).first()
         if not playlist:
             raise HTTPException(status_code=404, detail="找不到播放清單")
-        existing_track = session.exec(
-            select(PlaylistTrack).where(
-                PlaylistTrack.playlist_id == playlist_id,
-                PlaylistTrack.track_id == input.track_id,
-            )
-        ).first()
-
-        if existing_track:
+        if _track_in_playlist(session, playlist_id, input.track_id, input.stream_id):
             raise HTTPException(status_code=400, detail="歌曲已存在於播放清單中")
-
-        # 取得目前位置
-        count = (
-            session.exec(
-                select(func.count("*"))
-                .select_from(PlaylistTrack)
-                .where(PlaylistTrack.playlist_id == playlist_id)
-            ).first()
-            or 0
-        )
 
         playlist_track = PlaylistTrack(
             playlist_id=playlist_id,
             track_id=input.track_id,
             streamtrack_id=input.stream_id,
-            position=count + 1,
+            position=_next_position(session, playlist_id),
             track_type=Track_type.track if input.track_id else Track_type.stream,
         )
 
@@ -207,6 +225,48 @@ async def add_track_to_playlist(
         raise HTTPException(status_code=500, detail=f"新增失敗: {str(e)}")
 
 
+class PlaylistURLInput(BaseModel):
+    url: str
+
+
+@playlist_router.post("/playlist/{playlist_id}/url")
+async def add_url_to_playlist(
+    playlist_id: int,
+    input: PlaylistURLInput,
+    session: SessionDep,
+    user: User = Depends(get_user),
+):
+    playlist = session.exec(
+        select(Playlist).where(Playlist.id == playlist_id, Playlist.user_id == user.id)
+    ).first()
+    if not playlist:
+        raise HTTPException(status_code=404, detail="找不到播放清單")
+
+    try:
+        stream_tracks = await run_in_threadpool(save_stream_tracks, input.url, session)
+    except Exception as e:
+        logger.warning(f"解析網址失敗 {input.url}: {str(e)}")
+        raise HTTPException(status_code=400, detail="無法解析網址")
+
+    position = _next_position(session, playlist_id)
+    added = 0
+    for stream_track in stream_tracks:
+        if _track_in_playlist(session, playlist_id, None, stream_track.id):
+            continue
+        session.add(
+            PlaylistTrack(
+                playlist_id=playlist_id,
+                streamtrack_id=stream_track.id,
+                position=position,
+                track_type=Track_type.stream,
+            )
+        )
+        position += 1
+        added += 1
+    session.commit()
+    return {"added": added, "total": len(stream_tracks)}
+
+
 @playlist_router.delete("/playlist/{playlist_id}")
 async def delete_playlist(
     playlist_id: int, session: SessionDep, user: User = Depends(get_user)
@@ -218,6 +278,10 @@ async def delete_playlist(
     if not playlist:
         raise HTTPException(status_code=404, detail="找不到播放清單")
 
+    for item in session.exec(
+        select(PlaylistTrack).where(PlaylistTrack.playlist_id == playlist_id)
+    ).all():
+        session.delete(item)
     session.delete(playlist)
     session.commit()
     return {"message": "播放清單已刪除"}
@@ -245,12 +309,15 @@ async def remove_track_from_playlist(
     ).first()
     if not track:
         raise HTTPException(status_code=404, detail="找不到歌曲")
-    session.exec(
+
+    following = session.exec(
         select(PlaylistTrack).where(
             PlaylistTrack.playlist_id == playlist_id,
             PlaylistTrack.position > track_position,
         )
-    ).all().update({"position": PlaylistTrack.position - 1})
+    ).all()
+    for item in following:
+        item.position -= 1
 
     session.delete(track)
     session.commit()

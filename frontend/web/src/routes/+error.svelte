@@ -1,8 +1,10 @@
 <script lang="ts">
-	import { page } from '$app/stores'
+	import { page } from '$app/state'
+	import Button from '$lib/components/ui/Button.svelte'
 </script>
 
-<div class="grid h-screen place-content-center bg-white px-4">
-	<h1 class="uppercase tracking-widest text-gray-500">{$page.status} | {$page.error?.message}</h1>
-	<button class="btn mt-4" on:click={() => (location.href = '/')}>Back to Home</button>
+<div class="grid min-h-screen place-content-center px-4 text-center">
+	<p class="text-7xl font-black tracking-tight text-accent">{page.status}</p>
+	<p class="mt-3 text-fg-muted">{page.error?.message}</p>
+	<Button class="mx-auto mt-6" href="/app">回到首頁</Button>
 </div>

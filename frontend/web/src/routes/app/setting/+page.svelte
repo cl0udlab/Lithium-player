@@ -1,10 +1,13 @@
 <script lang="ts">
-	import { on } from 'svelte/events'
-	import type { PageData } from './$types'
-	import { Folder, File } from 'lucide-svelte'
-  import { APIUrl } from '$lib/api'
-
-	let { data }: { data: PageData } = $props()
+	import { Folder, File, FolderSearch, ChevronRight, HardDrive, ScanLine, FileSearch } from 'lucide-svelte'
+	import { APIUrl } from '$lib/api'
+	import { toast } from '$lib/stores/toast.svelte'
+	import Button from '$lib/components/ui/Button.svelte'
+	import Dialog from '$lib/components/ui/Dialog.svelte'
+	import Input from '$lib/components/ui/Input.svelte'
+	import PageHeader from '$lib/components/ui/PageHeader.svelte'
+	import Spinner from '$lib/components/ui/Spinner.svelte'
+	import Tabs from '$lib/components/ui/Tabs.svelte'
 
 	interface DirectoryContent {
 		files: string[]
@@ -13,331 +16,253 @@
 		error: string | null
 	}
 
-	let isModalOpen = $state(false)
+	let dialogOpen = $state(false)
+	let mode = $state<'directory' | 'file'>('directory')
 	let currentPath = $state('/')
+	let pathInput = $state('/')
 	let files = $state<string[]>([])
 	let dirs = $state<string[]>([])
-	let error = $state<string | null>(null)
-	let activeTab = $state('directory')
-	let scanStatus = $state<string | null>(null)
+	let browsing = $state(false)
+	let scanning = $state(false)
 
-	function handlePathInput() {
-		if (currentPath) {
-			fetchDirs(currentPath)
-		}
-	}
+	const crumbs = $derived(currentPath.split('/').filter(Boolean))
+
 	async function fetchDirs(path: string) {
+		browsing = true
 		try {
-			const response = await fetch(
-				`${APIUrl}/setting/dir?path=${encodeURIComponent(path)}`
-			)
-			const data: DirectoryContent = await response.json()
-
-			if (data.error) {
-				error = data.error
+			const response = await fetch(`${APIUrl}/setting/dir?path=${encodeURIComponent(path)}`)
+			const result: DirectoryContent = await response.json()
+			if (result.error) {
+				toast.error('無法開啟目錄', result.error)
 				return
 			}
-
-			files = data.files
-			dirs = data.dirs
-			currentPath = data.path
-			error = null
-		} catch (err) {
-			error = '取得目錄失敗'
+			files = result.files
+			dirs = result.dirs
+			currentPath = pathInput = result.path
+		} catch {
+			toast.error('取得目錄失敗')
+		} finally {
+			browsing = false
 		}
 	}
 
-	function handleDirClick(dir: string) {
-		const newPath = currentPath === '/' ? `/${dir}` : `${currentPath}/${dir}`
-		fetchDirs(newPath)
-	}
-	function handleFileClick(file: string) {
-		const newPath = currentPath === '/' ? `/${file}` : `${currentPath}/${file}`
-		currentPath = newPath
+	const join = (name: string) => (currentPath === '/' ? `/${name}` : `${currentPath}/${name}`)
+
+	function openDialog() {
+		dialogOpen = true
+		fetchDirs(currentPath)
 	}
 
-	function openModal() {
-		isModalOpen = true
-		fetchDirs('/')
-	}
-
-	function closeModal() {
-		isModalOpen = false
-		currentPath = '/'
-		dirs = []
-		error = null
-	}
-
-	async function handleScan() {
+	async function scan() {
+		scanning = true
+		const endpoint = mode === 'directory' ? 'scanall' : 'parse_file'
 		try {
-			scanStatus = '掃描中...'
-			const response = await fetch(`${APIUrl}/file/parse_file`, {
+			const response = await fetch(`${APIUrl}/file/${endpoint}`, {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ file_path: currentPath })
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ file_path: pathInput })
 			})
-
-			const data = await response.json()
-			if (response.status === 400) {
-				error = data.detail
-				scanStatus = data.detail
-				setTimeout(() => {
-					scanStatus = null
-				}, 3000)
+			const result = await response.json().catch(() => null)
+			if (mode === 'directory' && response.status === 409) {
+				toast.info('已經有掃描在進行中')
+				dialogOpen = false
+				pollScanStatus()
 				return
 			}
-
-			console.log('掃描結果:', data)
-			scanStatus = '掃描完成'
-			setTimeout(() => {
-				scanStatus = null
-			}, 3000)
-		} catch (err) {
-			error = '掃描失敗'
-			scanStatus = null
+			if (!response.ok) {
+				toast.error('掃描失敗', result?.detail ?? `HTTP ${response.status}`)
+				return
+			}
+			dialogOpen = false
+			if (mode === 'directory') {
+				scanStatus = result
+				toast.info('開始掃描', '在背景進行, 可以繼續使用')
+				pollScanStatus()
+			} else {
+				toast.success('掃描完成', pathInput)
+			}
+		} catch {
+			toast.error('掃描失敗', '無法連接到伺服器')
+		} finally {
+			scanning = false
 		}
 	}
 
-	async function handleScanDir() {
+	interface ScanStatus {
+		running: boolean
+		processed: number
+		total: number
+		current_file: string | null
+		added: number
+		removed: number
+		error: string | null
+	}
+
+	let scanStatus = $state<ScanStatus | null>(null)
+	let pollTimer: ReturnType<typeof setTimeout> | undefined
+
+	async function pollScanStatus() {
+		clearTimeout(pollTimer)
 		try {
-			scanStatus = '掃描中...'
-			const response = await fetch(`${APIUrl}/file/scanall`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ file_path: currentPath })
-			})
-
-			const data = await response.json()
-			if (response.status === 400) {
-				error = data.detail
-				scanStatus = data.detail
-				setTimeout(() => {
-					scanStatus = null
-				}, 3000)
-				return
+			const response = await fetch(`${APIUrl}/file/scanall/status`)
+			if (!response.ok) throw new Error(`HTTP ${response.status}`)
+			const wasRunning = scanStatus?.running
+			scanStatus = await response.json()
+			if (scanStatus?.running) {
+				pollTimer = setTimeout(pollScanStatus, 1500)
+			} else if (wasRunning && scanStatus) {
+				if (scanStatus.error) toast.error('掃描失敗', scanStatus.error)
+				else {
+					const removed = scanStatus.removed ? `, 移除 ${scanStatus.removed} 首已不存在的音樂` : ''
+					toast.success('掃描完成', `新增 ${scanStatus.added} 個檔案${removed}`)
+				}
 			}
-
-			console.log('掃描結果:', data)
-			scanStatus = '掃描完成'
-			setTimeout(() => {
-				scanStatus = null
-			}, 3000)
-		} catch (err) {
-			error = '掃描失敗'
-			scanStatus = null
+		} catch {
+			pollTimer = setTimeout(pollScanStatus, 5000)
 		}
 	}
 
-	function handleTabChange(tab: string) {
-		activeTab = tab
-	}
+	$effect(() => {
+		// 重新整理頁面時接續顯示還在跑的掃描
+		pollScanStatus()
+		return () => clearTimeout(pollTimer)
+	})
+
+	const scanRunning = $derived(scanStatus?.running ?? false)
+	const scanPercent = $derived(
+		scanStatus?.total ? Math.round((scanStatus.processed / scanStatus.total) * 100) : 0
+	)
 </script>
 
 <svelte:head>
 	<title>設定 - Lithium Player</title>
 </svelte:head>
 
-<div class="p-4">
-	<h1 class="mb-6 text-2xl font-bold">系統設定</h1>
+<PageHeader title="設定" />
 
-	<div class="card bg-base-200 shadow-xl">
-		<div class="card-body">
-			<h2 class="card-title">音樂掃描</h2>
-			<p>選擇要掃描的音樂目錄</p>
-			<div class="card-actions justify-end">
-				<button class="btn btn-primary" onclick={openModal}>
-					<Folder size={20} />
-					選擇目錄
-				</button>
+<div class="flex max-w-3xl flex-col gap-4">
+	<section class="rounded-2xl border border-line/5 bg-surface p-6">
+		<div class="flex items-start gap-4">
+			<div class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
+				<HardDrive class="h-5 w-5" />
 			</div>
-		</div>
-	</div>
-</div>
-
-<dialog class="modal" class:modal-open={isModalOpen}>
-	<div class="modal-box">
-		<h3 class="mb-4 text-lg font-bold">掃描目錄</h3>
-		<div class="tabs-boxed tabs mb-4">
-			<button
-				class="tab"
-				class:tab-active={activeTab === 'directory'}
-				onclick={() => handleTabChange('directory')}
-			>
-				掃描目錄
-			</button>
-			<button
-				class="tab"
-				class:tab-active={activeTab === 'scan'}
-				onclick={() => handleTabChange('scan')}
-			>
-				掃描檔案
-			</button>
-		</div>
-		{#if error}
-			<div class="alert alert-error mb-4">
-				<span>{error}</span>
-			</div>
-		{/if}
-		{#if activeTab === 'directory'}
-			<div class="form-control mb-4">
-				<div class="input-group flex flex-row">
-					<input
-						type="text"
-						placeholder="輸入目錄路徑..."
-						class="input input-bordered w-full"
-						bind:value={currentPath}
-						onkeypress={(e) => e.key === 'Enter' && handlePathInput()}
-					/>
-					<button class="btn btn-square" onclick={handlePathInput}> 前往 </button>
-				</div>
-			</div>
-			<div class="breadcrumbs mb-4 text-sm">
-				<ul>
-					<li>
-						<a
-							href="#"
-							onclick={(e) => {
-								e.preventDefault()
-								fetchDirs('/')
-							}}
-						>
-							根目錄
-						</a>
-					</li>
-					{#if currentPath !== '/'}
-						{#each currentPath.split('/').filter(Boolean) as part, index}
-							<li>
-								<a
-									href="#"
-									onclick={(e) => {
-										e.preventDefault()
-										const path =
-											'/' +
-											currentPath
-												.split('/')
-												.filter(Boolean)
-												.slice(0, index + 1)
-												.join('/')
-										fetchDirs(path)
-									}}
-								>
-									{part}
-								</a>
-							</li>
-						{/each}
-					{/if}
-				</ul>
-			</div>
-			<div class="max-h-96 overflow-y-auto">
-				<table class="table-zebra table">
-					<tbody> </tbody><tbody>
-						{#each dirs as dir}
-							<tr class="hover cursor-pointer" onclick={() => handleDirClick(dir)}>
-								<td>
-									<Folder size={20} class="text-primary mr-2 inline" />
-									{dir}
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-			<div class="modal-action">
-				<button class="btn btn-ghost" onclick={closeModal}>取消</button>
-				<button class="btn btn-primary" onclick={handleScanDir}>開始掃描</button>
-			</div>
-		{:else}
-			<div class="form-control">
-				<div class="form-control mb-4">
-					<div class="input-group flex flex-row">
-						<input
-							type="text"
-							placeholder="輸入目錄路徑..."
-							class="input input-bordered w-full"
-							bind:value={currentPath}
-							onkeypress={(e) => e.key === 'Enter' && handlePathInput()}
-						/>
-						<button class="btn btn-square" onclick={handlePathInput}> 前往 </button>
-					</div>
-				</div>
-				<div class="breadcrumbs mb-4 text-sm">
-					<ul>
-						<li>
-							<a
-								href="#"
-								onclick={(e) => {
-									e.preventDefault()
-									fetchDirs('/')
-								}}
-							>
-								根目錄
-							</a>
-						</li>
-						{#if currentPath !== '/'}
-							{#each currentPath.split('/').filter(Boolean) as part, index}
-								<li>
-									<a
-										href="#"
-										onclick={(e) => {
-											e.preventDefault()
-											const path =
-												'/' +
-												currentPath
-													.split('/')
-													.filter(Boolean)
-													.slice(0, index + 1)
-													.join('/')
-											fetchDirs(path)
-										}}
-									>
-										{part}
-									</a>
-								</li>
-							{/each}
+			<div class="min-w-0 flex-1">
+				<h2 class="font-semibold">媒體庫</h2>
+				<p class="mt-1 text-sm text-fg-muted">
+					掃描伺服器上的資料夾, 加入音樂、影片和文件。已經在媒體庫的檔案會自動略過, 檔案已經不見的音樂會從媒體庫移除。
+				</p>
+				{#if scanRunning && scanStatus}
+					<div class="mt-4">
+						<div class="flex items-center justify-between gap-2 text-xs text-fg-muted">
+							<span class="flex items-center gap-2">
+								<Spinner class="h-3 w-3" /> 背景掃描中
+							</span>
+							<span class="font-mono">
+								{scanStatus.total ? `${scanStatus.processed} / ${scanStatus.total}` : '列出檔案中…'}
+							</span>
+						</div>
+						<div class="mt-2 h-1.5 overflow-hidden rounded-full bg-line/10">
+							<div class="h-full bg-accent transition-[width]" style="width: {scanPercent}%"></div>
+						</div>
+						{#if scanStatus.current_file}
+							<p class="mt-1 truncate font-mono text-xs text-fg-subtle">{scanStatus.current_file}</p>
 						{/if}
-					</ul>
-				</div>
-				{#if scanStatus}
-					<div class="alert alert-info mb-4">
-						<span>{scanStatus}</span>
 					</div>
 				{/if}
-				<div class="max-h-96 overflow-y-auto">
-					<table class="table-zebra table">
-						<tbody>
-							{#each dirs as dir}
-								<tr class="hover cursor-pointer" onclick={() => handleDirClick(dir)}>
-									<td>
-										<Folder size={20} class="text-primary mr-2 inline" />
-										{dir}
-									</td>
-								</tr>
-							{/each}
-							{#each files as file}
-								<tr class="hover" onclick={() => handleFileClick(file)}>
-									<td>
-										<File size={20} class="text-secondary mr-2 inline" />
-										{file}
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
 			</div>
-			<div class="modal-action">
-				<button class="btn btn-ghost" onclick={closeModal}>取消</button>
-				<button class="btn btn-primary" onclick={handleScan} disabled={scanStatus === '掃描中...'}>
-					{scanStatus === '掃描中...' ? '掃描中...' : '開始掃描'}
+			<Button variant="primary" onclick={openDialog} disabled={scanRunning}>
+				<FolderSearch class="h-4 w-4" /> 掃描
+			</Button>
+		</div>
+	</section>
+
+	<section class="rounded-2xl border border-line/5 bg-surface p-6">
+		<h2 class="font-semibold">播放器</h2>
+		<p class="mt-1 text-sm text-fg-muted">
+			顯示模式、背景圖片 / 影片和亮度, 都在全螢幕播放器右下角的設定按鈕調整。
+		</p>
+	</section>
+</div>
+
+<Dialog
+	bind:open={dialogOpen}
+	title="掃描"
+	description="選擇要掃描的資料夾或單一檔案"
+	class="w-[min(40rem,calc(100vw-2rem))]"
+>
+	<Tabs
+		bind:value={mode}
+		items={[
+			{ value: 'directory', label: '整個資料夾', icon: ScanLine },
+			{ value: 'file', label: '單一檔案', icon: FileSearch }
+		]}
+	>
+		{#snippet content(current)}
+			<form
+				class="flex gap-2"
+				onsubmit={(e) => {
+					e.preventDefault()
+					fetchDirs(pathInput)
+				}}
+			>
+				<Input bind:value={pathInput} placeholder="/music" class="flex-1 font-mono" />
+				<Button type="submit">前往</Button>
+			</form>
+
+			<nav class="mt-3 flex flex-wrap items-center gap-0.5 text-sm text-fg-muted">
+				<button class="rounded px-1.5 py-0.5 hover:bg-line/5 hover:text-fg" onclick={() => fetchDirs('/')}>
+					根目錄
 				</button>
+				{#each crumbs as part, i}
+					<ChevronRight class="h-3.5 w-3.5 text-fg-subtle" />
+					<button
+						class="rounded px-1.5 py-0.5 hover:bg-line/5 hover:text-fg"
+						onclick={() => fetchDirs('/' + crumbs.slice(0, i + 1).join('/'))}
+					>
+						{part}
+					</button>
+				{/each}
+			</nav>
+
+			<div class="mt-3 h-72 overflow-y-auto rounded-xl border border-line/5 bg-bg/40 p-1">
+				{#if browsing}
+					<div class="grid h-full place-items-center"><Spinner /></div>
+				{:else}
+					{#each dirs as dir (dir)}
+						<button
+							class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm hover:bg-line/5"
+							onclick={() => fetchDirs(join(dir))}
+						>
+							<Folder class="h-4 w-4 shrink-0 text-accent" />
+							<span class="truncate">{dir}</span>
+						</button>
+					{/each}
+					{#if current === 'file'}
+						{#each files as file (file)}
+							<button
+								class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm hover:bg-line/5 {pathInput ===
+								join(file)
+									? 'bg-accent/10 text-accent'
+									: ''}"
+								onclick={() => (pathInput = join(file))}
+							>
+								<File class="h-4 w-4 shrink-0 text-fg-subtle" />
+								<span class="truncate">{file}</span>
+							</button>
+						{/each}
+					{/if}
+					{#if dirs.length === 0 && (current === 'directory' || files.length === 0)}
+						<p class="py-10 text-center text-sm text-fg-subtle">這個資料夾是空的</p>
+					{/if}
+				{/if}
 			</div>
-		{/if}
-	</div>
-	<form method="dialog" class="modal-backdrop">
-		<button onclick={closeModal}>關閉</button>
-	</form>
-</dialog>
+		{/snippet}
+	</Tabs>
+	{#snippet footer()}
+		<p class="mr-auto self-center truncate font-mono text-xs text-fg-subtle">{pathInput}</p>
+		<Button variant="ghost" onclick={() => (dialogOpen = false)}>取消</Button>
+		<Button variant="primary" onclick={scan} disabled={scanning}>
+			{#if scanning}<Spinner class="h-4 w-4" /> 掃描中…{:else}開始掃描{/if}
+		</Button>
+	{/snippet}
+</Dialog>
