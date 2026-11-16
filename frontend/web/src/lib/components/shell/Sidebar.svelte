@@ -21,6 +21,7 @@
 			items: [
 				{ href: '/app', label: '首頁', icon: House },
 				{ href: '/app/music', label: '歌曲', icon: Music },
+				{ href: '/app/subsonic', label: 'Subsonic', icon: Music },
 				{ href: '/app/albums', label: '專輯', icon: Disc3 },
 				{ href: '/app/playlist', label: '播放清單', icon: ListMusic }
 			]

@@ -8,6 +8,7 @@
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test:player": "node --test tests/player.test.cjs",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint ."
 	},

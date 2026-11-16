@@ -16,6 +16,7 @@ from core.musicstream import (
 )
 from core.musiclyrics import find_lyrics, LyricsServiceError
 from core.logger import logger
+from core import subsonic
 import asyncio
 import httpx
 import re
@@ -224,6 +225,13 @@ async def stream_online(
     if not track:
         raise HTTPException(status_code=404, detail="找不到網路音訊")
 
+    if track.url.startswith("subsonic://"):
+        try:
+            path = await run_in_threadpool(subsonic.cached_audio, track.url)
+            return FileResponse(path, media_type="application/octet-stream")
+        except subsonic.SubsonicError as exc:
+            raise HTTPException(503, str(exc)) from exc
+
     range_header = request.headers.get("Range")
 
     async def connect(refresh: bool):
@@ -278,6 +286,9 @@ async def get_stream_lyrics_api(
     track = session.get(StreamTrack, stream_id)
     if not track:
         raise HTTPException(status_code=404, detail="找不到網路音訊")
+
+    if track.url.startswith("subsonic://"):
+        return {"lyrics": track.lyrics or None}
 
     if track.lyrics is None or refresh:
         try:

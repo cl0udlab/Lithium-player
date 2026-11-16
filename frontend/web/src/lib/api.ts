@@ -7,6 +7,7 @@ export const APIUrl = import.meta.env.DEV ? 'http://localhost:8000' : '/api'
 export function coverUrl(coverArt: string | null | undefined, size = 300): string | null {
 	if (!coverArt) return null
 	if (/^https?:\/\//.test(coverArt)) return coverArt
+	if (coverArt.startsWith('/subsonic/cover/')) return `${APIUrl}${coverArt}`
 	return `${APIUrl}/file/image?image_id=${coverArt}&image_size=${size}`
 }
 

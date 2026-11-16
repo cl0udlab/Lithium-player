@@ -13,3 +13,5 @@ __pycache__/
 *.py[cod]
 *$py.class
 backend/src/data
+/backend/data/subsonic/
+/data/subsonic/

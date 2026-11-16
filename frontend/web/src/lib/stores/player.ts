@@ -2,7 +2,8 @@ import { writable } from 'svelte/store'
 import type { PlayableTrack, Video } from '$lib/types'
 import { isStreamTrack, trackKey } from '$lib/types'
 import { playerliststat } from '$lib/stores/playerlist'
-import { APIUrl } from '$lib/api'
+import { APIUrl, apiFetch } from '$lib/api'
+import { toast } from '$lib/stores/toast.svelte'
 
 interface PlayerState {
 	type: 'video' | 'audio' | null
@@ -37,6 +38,8 @@ function createPlayerState() {
 		currentState = state
 	})
 	let boundPlayer: HTMLAudioElement | null = null
+	let playRequest = 0
+	let cancelLoad: (() => void) | null = null
 
 	const bindPlayerEvents = (player: HTMLAudioElement) => {
 		if (boundPlayer === player) return
@@ -48,7 +51,6 @@ function createPlayerState() {
 			await playNext()
 		})
 	}
-
 
 	const loadLyrics = async (track: PlayableTrack) => {
 		const path = isStreamTrack(track) ? 'stream' : 'music'
@@ -68,16 +70,23 @@ function createPlayerState() {
 	}
 
 	const playMusiclist = async (tracks: PlayableTrack[], startIndex = 0) => {
+		if (!tracks[startIndex]) return
 		for (const t of tracks) {
 			playerliststat.addmusic(t)
 		}
 		await playMusic(tracks[startIndex])
 	}
 	const playMusic = async (track: PlayableTrack) => {
+		if (!track) return
+		const request = ++playRequest
+		cancelLoad?.()
+		currentState.player?.pause()
 		update((state) => ({
 			...state,
 			currentTrack: track,
-			isPlaying: true,
+			isPlaying: false,
+			currentTime: 0,
+			src: null,
 			type: 'audio'
 		}))
 		if (!currentState.player) {
@@ -86,28 +95,51 @@ function createPlayerState() {
 		}
 		const player = currentState.player
 		bindPlayerEvents(player)
+		player.removeAttribute('src')
+		player.load()
 		if (track.lyrics == null) {
 			loadLyrics(track)
 		}
 		try {
-			player.src = trackSrc(track)
+			if (isStreamTrack(track) && track.url.startsWith('subsonic://')) {
+				const response = await apiFetch(`/subsonic/cache/${track.id}`, { method: 'POST' })
+				if (!response.ok) {
+					const body = await response.json()
+					throw new Error(typeof body.detail === 'string' ? body.detail : '無法取得 Subsonic 歌曲')
+				}
+			}
+			if (request !== playRequest) return
 			await new Promise<void>((resolve, reject) => {
-				const onCanPlay = () => {
+				const cleanup = () => {
+					clearTimeout(timer)
 					player.removeEventListener('canplay', onCanPlay)
 					player.removeEventListener('error', onError)
+					cancelLoad = null
+				}
+				const onCanPlay = () => {
+					cleanup()
 					resolve()
 				}
-				const onError = (error: any) => {
-					player.removeEventListener('canplay', onCanPlay)
-					player.removeEventListener('error', onError)
-					reject(error)
+				const onError = () => {
+					cleanup()
+					reject(new Error('無法載入音訊，請檢查連線後重試'))
+				}
+				const timer = setTimeout(onError, 30000)
+				cancelLoad = () => {
+					cleanup()
+					resolve()
 				}
 				player.addEventListener('canplay', onCanPlay)
 				player.addEventListener('error', onError)
+				player.src = trackSrc(track)
 			})
+			if (request !== playRequest) return
 			await player.play()
+			if (request === playRequest) update((state) => ({ ...state, isPlaying: true }))
 		} catch (error) {
+			if (request !== playRequest) return
 			console.error('播放失敗:', error)
+			toast.error(error instanceof Error ? error.message : '播放失敗，請檢查連線後重試')
 			update((state) => ({ ...state, isPlaying: false }))
 		}
 	}
@@ -153,13 +185,34 @@ function createPlayerState() {
 		playPrevious,
 		playMusic,
 		playMusiclist,
-		stop: () =>
+		togglePlayback: async () => {
+			const player = currentState.player
+			const track = currentState.currentTrack
+			if (!player || !track || !('artist' in track)) return
+			if (!player.paused) {
+				player.pause()
+				update((state) => ({ ...state, isPlaying: false }))
+			} else if (!player.getAttribute('src') || player.error) {
+				await playMusic(track as PlayableTrack)
+			} else {
+				try {
+					await player.play()
+					update((state) => ({ ...state, isPlaying: true }))
+				} catch {
+					toast.error('播放失敗，請檢查連線後重試')
+				}
+			}
+		},
+		stop: () => {
+			++playRequest
+			cancelLoad?.()
 			update((state) => {
 				if (state.player) {
 					state.player.pause()
 				}
 				return { ...state, isPlaying: false }
-			}),
+			})
+		},
 		getCurrentTime: () => currentState.currentTime,
 		setCurrentTime: (time: number) =>
 			update((state) => {

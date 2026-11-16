@@ -15,6 +15,7 @@ from routers.setting import setting_router
 from routers.playlist import playlist_router
 from routers.video import video_router
 from routers.background import background_router
+from routers.subsonic import subsonic_router
 from core.logger import logger
 from starlette.middleware.cors import CORSMiddleware
 
@@ -45,6 +46,7 @@ app.include_router(setting_router)
 app.include_router(playlist_router)
 app.include_router(video_router)
 app.include_router(background_router)
+app.include_router(subsonic_router)
 logger.info("Server started")
 
 cors = [

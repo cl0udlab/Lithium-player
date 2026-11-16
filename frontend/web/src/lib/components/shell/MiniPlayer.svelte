@@ -33,9 +33,7 @@
 	})
 
 	function togglePlay() {
-		if (!player) return
-		if (player.paused) player.play()
-		else player.pause()
+		void playerState.togglePlayback()
 	}
 
 	function toggleMute() {
