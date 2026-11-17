@@ -59,8 +59,18 @@
 			])
 			if (id !== requestId) return
 			results = [
-				...music.musics.map((m: any) => ({ kind: 'music', id: m.id, title: m.title, subtitle: m.artist })),
-				...music.stream_tracks.map((s: any) => ({ kind: 'stream', id: s.id, title: s.title, subtitle: s.artist })),
+				...music.musics.map((m: any) => ({
+					kind: 'music',
+					id: m.id,
+					title: m.title,
+					subtitle: m.artist
+				})),
+				...music.stream_tracks.map((s: any) => ({
+					kind: 'stream',
+					id: s.id,
+					title: s.title,
+					subtitle: s.artist
+				})),
 				...all
 					.filter((r: any) => r.type === 'album' || r.type === 'video')
 					.map((r: any) => ({ kind: r.type, id: r.id, title: r.title }))
@@ -91,10 +101,8 @@
 				return
 			}
 			case 'stream': {
-				const response = await apiFetch('/file/streamtracks')
-				const track = response.ok
-					? ((await response.json()) as StreamTrack[]).find((t) => t.id === result.id)
-					: null
+				const response = await apiFetch(`/file/streamtracks?track_id=${result.id}`)
+				const track = response.ok ? ((await response.json()) as StreamTrack) : null
 				if (track) playMusic({ ...track, kind: 'stream' })
 				return
 			}
@@ -108,15 +116,17 @@
 </script>
 
 <div class="relative w-full max-w-md">
-	<Search class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
+	<Search
+		class="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-fg-subtle"
+	/>
 	<input
 		{...combobox.input}
 		type="search"
 		placeholder="搜尋歌曲、專輯、影片…"
-		class="h-10 w-full rounded-full border border-line/10 bg-surface-2/80 pl-10 pr-10 text-sm outline-hidden transition-colors placeholder:text-fg-subtle hover:border-line/20 focus:border-accent/50 focus:bg-surface-2"
+		class="h-10 w-full rounded-full border border-line/10 bg-surface-2/80 pr-10 pl-10 text-sm outline-hidden transition-colors placeholder:text-fg-subtle hover:border-line/20 focus:border-accent/50 focus:bg-surface-2"
 	/>
 	{#if loading}
-		<Spinner class="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
+		<Spinner class="absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
 	{/if}
 
 	<div
@@ -131,7 +141,7 @@
 		{#each groups as group (group.kind)}
 			{@const items = results.filter((r) => r.kind === group.kind)}
 			{#if items.length > 0}
-				<p class="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">
+				<p class="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wider text-fg-subtle uppercase">
 					{group.label}
 				</p>
 				{#each items as result (result.key)}

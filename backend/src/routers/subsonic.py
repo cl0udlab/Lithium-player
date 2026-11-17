@@ -8,7 +8,8 @@ from sqlmodel import Session, select
 from auth.auth import is_admin, get_user
 from core import subsonic
 from db import get_db
-from models import StreamTrack, StreamPlatform
+from models import StreamTrack, StreamPlatform, Album, SubsonicSong, MusicTrack
+from sqlalchemy import func
 
 subsonic_router = APIRouter(prefix="/subsonic", tags=["subsonic"])
 SessionDep = Annotated[Session, Depends(get_db)]
@@ -46,6 +47,8 @@ def sync(session: SessionDep):
         songs = subsonic.library(connection)
         existing = {track.url: track for track in session.exec(
             select(StreamTrack).where(StreamTrack.url.startswith("subsonic://"))).all()}
+        metadata = {item.track_id: item for item in session.exec(select(SubsonicSong)).all()}
+        albums = {(item.source, item.remote_album_id): item.album_id for item in metadata.values()}
         for song in songs:
             url = subsonic.song_url(connection, song["id"])
             track = existing.get(url) or StreamTrack(
@@ -55,9 +58,38 @@ def sync(session: SessionDep):
             track.duration = int(song.get("duration") or 0)
             session.add(track)
             session.flush()
+            album_key = str(song.get("albumId") or f"{song.get('album', '')}:{song.get('artist', '')}")
+            key = (connection.identity, album_key)
+            album = session.get(Album, albums[key]) if albums.get(key) else None
+            if album is None:
+                album = Album(title=song.get("album") or "未分類專輯",
+                              album_artist=song.get("albumArtist") or track.artist)
+                session.add(album)
+                session.flush()
+                albums[key] = album.id
+            item = metadata.get(track.id) or SubsonicSong(
+                track_id=track.id, source=connection.identity, remote_album_id=album_key)
+            item.album_id = album.id
+            item.album = song.get("album") or album.title
+            item.track_number = int(song.get("track") or 0)
+            item.disc_number = int(song.get("discNumber") or 0)
+            album.title = item.album
+            album.album_artist = song.get("albumArtist") or album.album_artist
+            album.genre = song.get("genre") or album.genre
+            album.release_date = str(song["year"]) if song.get("year") else album.release_date
             if song.get("coverArt"):
-                track.cover_art = f"/subsonic/cover/{track.id}?art={quote(str(song['coverArt']), safe='')}"
+                track.cover_art = f"/subsonic/art/{connection.identity}?id={quote(str(song['coverArt']), safe='')}"
+                album.cover_art = track.cover_art
+            session.add(item)
+            session.add(album)
             session.add(track)
+        for album_id in set(albums.values()):
+            if album_id:
+                album = session.get(Album, album_id)
+                album.total_tracks = len(session.exec(select(SubsonicSong).where(SubsonicSong.album_id == album_id)).all())
+                album.total_tracks += session.exec(select(func.count()).select_from(MusicTrack)
+                                                   .where(MusicTrack.album_id == album_id)).one()
+                session.add(album)
         session.commit()
     except subsonic.SubsonicError as exc:
         session.rollback()
@@ -94,6 +126,19 @@ def cache(track_id: int, session: SessionDep):
 def cover(track_id: int, art: str, session: SessionDep):
     track = get_track(session, track_id)
     try:
-        return FileResponse(subsonic.cover(track.url, art), media_type="image/jpeg")
+        return image_response(track.url, art)
     except subsonic.SubsonicError as exc:
         raise HTTPException(404, str(exc)) from exc
+
+
+def image_response(url, art):
+    try:
+        return FileResponse(subsonic.cover(url, art), media_type="image/jpeg",
+                            headers={"Cache-Control": "public, max-age=86400"})
+    except subsonic.SubsonicError as exc:
+        raise HTTPException(503, str(exc), headers={"Retry-After": "30", "Cache-Control": "max-age=30"}) from exc
+
+
+@subsonic_router.get("/art/{source}")
+def art(source: str, id: str):
+    return image_response(f"subsonic://{source}/", id)

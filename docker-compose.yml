@@ -30,6 +30,8 @@ services:
   frontend:
     image: phillychi3/lithium-player-frontend:latest
     container_name: lithium-frontend
+    environment:
+      API_INTERNAL_URL: http://backend:8000
     volumes:
       - ./frontend:/app
     ports:

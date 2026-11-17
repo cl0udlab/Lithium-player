@@ -16,7 +16,7 @@
 	const album = $derived(data.album)
 	const tracks: PlayableTrack[] = $derived(
 		((album.tracks ?? []) as any[])
-			.map((t): MusicTrack => ({ ...t, kind: 'music' }))
+			.map((t): PlayableTrack => ({ ...t, kind: t.kind ?? 'music' }))
 			.sort(
 				(a: any, b: any) =>
 					(a.disc_number ?? 0) - (b.disc_number ?? 0) ||

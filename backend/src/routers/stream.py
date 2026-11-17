@@ -7,6 +7,7 @@ from db import get_db
 from fastapi.concurrency import run_in_threadpool
 from starlette.background import BackgroundTask
 from models.music import MusicTrack, StreamTrack
+from models.subsonic import SubsonicSong
 from models.video import Video
 from models.file import FileModal
 from core.musicstream import (
@@ -288,6 +289,30 @@ async def get_stream_lyrics_api(
         raise HTTPException(status_code=404, detail="找不到網路音訊")
 
     if track.url.startswith("subsonic://"):
+        if not track.lyrics or refresh:
+            source_error = None
+            try:
+                lyrics = await run_in_threadpool(subsonic.lyrics, track.url, track.title, track.artist)
+            except subsonic.SubsonicError as exc:
+                lyrics = None
+                source_error = exc
+            if not lyrics:
+                metadata = session.get(SubsonicSong, track.id)
+                try:
+                    lyrics = await run_in_threadpool(find_lyrics, track.title, track.artist,
+                                                    metadata.album if metadata else None, track.duration)
+                except LyricsServiceError as exc:
+                    if track.lyrics:
+                        return {"lyrics": track.lyrics}
+                    raise HTTPException(503, "歌詞服務暫時無法使用，請稍後重試") from exc
+            if lyrics:
+                track.lyrics = lyrics
+                session.add(track)
+                session.commit()
+            elif source_error:
+                if track.lyrics:
+                    return {"lyrics": track.lyrics}
+                raise HTTPException(503, "Subsonic 歌詞來源暫時無法使用，請稍後重試") from source_error
         return {"lyrics": track.lyrics or None}
 
     if track.lyrics is None or refresh:

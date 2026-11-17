@@ -97,7 +97,7 @@ function createPlayerState() {
 		bindPlayerEvents(player)
 		player.removeAttribute('src')
 		player.load()
-		if (track.lyrics == null) {
+		if (!track.lyrics) {
 			loadLyrics(track)
 		}
 		try {

@@ -2,6 +2,7 @@
 import hashlib
 import secrets
 import threading
+import time
 from pathlib import Path
 from urllib.parse import quote, unquote, urlsplit
 
@@ -13,7 +14,9 @@ _lock = threading.RLock()
 
 
 class SubsonicError(Exception):
-    pass
+    def __init__(self, message, code=None):
+        super().__init__(message)
+        self.code = code
 
 
 class Connection(BaseModel):
@@ -79,8 +82,10 @@ def call(connection, method, **extra):
         body = response.json()["subsonic-response"]
         if body.get("status") != "ok":
             code = body.get("error", {}).get("code", 0)
-            raise SubsonicError(f"Subsonic API 錯誤（代碼 {code}）")
+            raise SubsonicError(f"Subsonic API 錯誤（代碼 {code}）", code=code)
         return body
+    except httpx.HTTPStatusError as exc:
+        raise SubsonicError("Subsonic API 暫時無法使用", code=0 if exc.response.status_code == 404 else None) from exc
     except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
         raise SubsonicError("無法連線至 Subsonic 伺服器，請檢查網址與連線") from exc
 
@@ -100,8 +105,11 @@ def library(connection):
             raise SubsonicError("伺服器未正確支援分頁，同步已取消，原有曲目已保留")
         seen_pages.add(page)
         for album in albums:
-            for song in call(connection, "getAlbum", id=album["id"]).get("album", {}).get("song", []):
-                songs[str(song["id"])] = song
+            detail = call(connection, "getAlbum", id=album["id"]).get("album", {})
+            for song in detail.get("song", []):
+                songs[str(song["id"])] = {"albumId": album["id"], "album": detail.get("name", album.get("name")),
+                    "albumArtist": detail.get("artist", album.get("artist")),
+                    "coverArt": detail.get("coverArt", album.get("coverArt")), **song}
         offset += len(albums)
     return list(songs.values())
 
@@ -157,23 +165,68 @@ def cached_audio(url):
             temporary.unlink(missing_ok=True)
 
 
+_cover_guard = threading.Lock()
+_cover_locks = {}
+_cover_failures = {}
+_cover_slots = threading.BoundedSemaphore(3)
+
+
 def cover(url, art):
-    path = DATA / "covers" / hashlib.sha256(f"{url}\n{art}".encode()).hexdigest()
+    source = urlsplit(url).netloc
+    key = hashlib.sha256(f"{source}\n{art}".encode()).hexdigest()
+    path = DATA / "covers" / key
     if path.exists():
         return path
-    connection, _ = connection_for(url)
-    try:
-        response = httpx.get(f"{connection.url}/rest/getCoverArt.view",
-                             params=params(connection, id=art, size=300), timeout=20,
-                             follow_redirects=True)
-        response.raise_for_status()
-        if not response.headers.get("content-type", "").startswith("image/"):
-            raise SubsonicError("找不到封面")
-        with _lock:
+    with _cover_guard:
+        lock = _cover_locks.setdefault(key, threading.Lock())
+    with lock:
+        if path.exists():
+            return path
+        if _cover_failures.get(key, 0) > time.monotonic():
+            raise SubsonicError("封面來源暫時無法使用，請稍後重試")
+        try:
+            connection, _ = connection_for(url)
+            with _cover_slots:
+                response = httpx.get(f"{connection.url}/rest/getCoverArt.view",
+                    params=params(connection, id=art, size=600), timeout=20, follow_redirects=True)
+                response.raise_for_status()
+            if not response.headers.get("content-type", "").startswith("image/"):
+                raise SubsonicError("找不到封面")
             path.parent.mkdir(parents=True, exist_ok=True)
             temporary = path.with_suffix(".tmp")
             temporary.write_bytes(response.content)
             temporary.replace(path)
-        return path
-    except httpx.HTTPError as exc:
-        raise SubsonicError("無法取得封面") from exc
+            return path
+        except (httpx.HTTPError, OSError, SubsonicError) as exc:
+            _cover_failures[key] = time.monotonic() + 30
+            raise SubsonicError("封面來源暫時無法使用，請稍後重試") from exc
+
+
+def lyrics(url, title, artist):
+    connection, song_id = connection_for(url)
+    errors = []
+    try:
+        entries = call(connection, "getLyricsBySongId", id=song_id).get("lyricsList", {}).get("structuredLyrics", [])
+        for entry in sorted(entries, key=lambda item: not item.get("synced", False)):
+            lines = []
+            for line in entry.get("line", []):
+                text = line.get("value", "")
+                if entry.get("synced") and line.get("start") is not None:
+                    seconds = max(0, float(line["start"]) + float(entry.get("offset") or 0)) / 1000
+                    text = f"[{int(seconds // 60):02d}:{seconds % 60:05.2f}]{text}"
+                lines.append(text)
+            if any(line.get("value", "").strip() for line in entry.get("line", [])):
+                return "\n".join(lines)
+    except SubsonicError as exc:
+        if exc.code not in (0, 20, 30, 70):
+            errors.append(exc)
+    try:
+        content = call(connection, "getLyrics", artist=artist, title=title).get("lyrics", {}).get("value")
+        if content:
+            return content
+    except SubsonicError as exc:
+        if exc.code not in (0, 20, 30, 70):
+            errors.append(exc)
+    if errors:
+        raise errors[-1]
+    return None

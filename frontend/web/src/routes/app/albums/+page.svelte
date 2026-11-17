@@ -1,4 +1,5 @@
 <script lang="ts">
+	import LibraryToolbar from '$lib/components/ui/LibraryToolbar.svelte'
 	import { getContext } from 'svelte'
 	import { coverUrl } from '$lib/api'
 	import { fetchAlbumTracks } from '$lib/utils/library'
@@ -10,9 +11,8 @@
 
 	let { data }: { data: PageData } = $props()
 
-	const playMusiclist = getContext<(tracks: PlayableTrack[], startIndex?: number) => void>(
-		'playMusiclist'
-	)
+	const playMusiclist =
+		getContext<(tracks: PlayableTrack[], startIndex?: number) => void>('playMusiclist')
 	const albums: any[] = $derived(data.albums ?? [])
 
 	async function playAlbum(albumId: number) {
@@ -28,7 +28,14 @@
 {#if data.error}
 	<StatusMessage kind="error" title="載入失敗" message={data.error} retry={data.status === 500} />
 {:else}
-	<PageHeader title="專輯" subtitle="{albums.length} 張" />
+	<PageHeader title="專輯" subtitle="{data.total} 張" />
+	<LibraryToolbar
+		path="/app/albums"
+		total={data.total}
+		page={data.page}
+		size={data.size}
+		q={data.q}
+	/>
 	{#if albums.length}
 		<div class="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
 			{#each albums as album (album.id)}
@@ -43,6 +50,9 @@
 			{/each}
 		</div>
 	{:else}
-		<StatusMessage title="還沒有專輯" message="到設定頁掃描音樂資料夾。" />
+		<StatusMessage
+			title="還沒有專輯"
+			message="可到設定頁掃描資料夾或同步 Subsonic，亦可調整搜尋條件。"
+		/>
 	{/if}
 {/if}

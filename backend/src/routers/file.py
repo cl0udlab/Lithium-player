@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from fastapi.concurrency import run_in_threadpool
 from core.musicstream import save_stream_tracks
 from core.logger import logger
+from routers.library import tracks as library_tracks, albums as library_albums
 
 
 class FilePathRequest(BaseModel):
@@ -77,7 +78,7 @@ async def get_image_file(
     return StreamingResponse(image_io, media_type="image/jpeg")
 
 
-@file_router.get("/info", response_model=InfoResponse)
+@file_router.get("/info")
 async def get_info(session: SessionDep, limit: int = 20):
     """獲取所有檔案資訊"""
     musics = session.exec(
@@ -102,8 +103,8 @@ async def get_info(session: SessionDep, limit: int = 20):
     ).all()
 
     return {
-        "Musics": [track.model_dump() for track in musics],
-        "Albums": [album.model_dump() for album in albums],
+        "Musics": library_tracks(session, page=1, size=min(limit, 20), q="", cached=False)["items"],
+        "Albums": library_albums(session, page=1, size=min(limit, 20), q="")["items"],
         "Videos": [video.model_dump() for video in videos],
     }
 
@@ -330,9 +331,16 @@ async def url_track(session: SessionDep, request: URLTrackRequest):
         raise HTTPException(status_code=400, detail="無法解析網址")
 
 
-@file_router.get("/streamtracks", response_model=list[StreamTrack])
-async def get_stream_tracks(session: SessionDep):
-    return session.exec(select(StreamTrack).order_by(desc(StreamTrack.id))).all()
+@file_router.get("/streamtracks")
+async def get_stream_tracks(session: SessionDep, track_id: Optional[int] = None,
+                            limit: int = Query(20, ge=1, le=100)):
+    if track_id is not None:
+        track = session.get(StreamTrack, track_id)
+        if not track:
+            raise HTTPException(404, "找不到網路音訊")
+        return track
+    return session.exec(select(StreamTrack).where(~StreamTrack.url.startswith("subsonic://"))
+                        .order_by(desc(StreamTrack.id)).limit(limit)).all()
 
 
 @file_router.delete("/{file_id}")

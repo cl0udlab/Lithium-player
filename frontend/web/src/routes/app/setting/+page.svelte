@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SubsonicSettings from '$lib/components/SubsonicSettings.svelte'
 	import { Folder, File, FolderSearch, ChevronRight, HardDrive, ScanLine, FileSearch } from 'lucide-svelte'
 	import { APIUrl } from '$lib/api'
 	import { toast } from '$lib/stores/toast.svelte'
@@ -141,6 +142,7 @@
 <PageHeader title="設定" />
 
 <div class="flex max-w-3xl flex-col gap-4">
+	<div id="subsonic"><SubsonicSettings /></div>
 	<section class="rounded-2xl border border-line/5 bg-surface p-6">
 		<div class="flex items-start gap-4">
 			<div class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">

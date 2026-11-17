@@ -1,12 +1,12 @@
 import { apiFetch } from '$lib/api'
-import type { MusicTrack } from '$lib/types'
+import type { PlayableTrack } from '$lib/types'
 
-export async function fetchAlbumTracks(albumId: number): Promise<MusicTrack[]> {
-	const response = await apiFetch(`/file/album?album_id=${albumId}`)
+export async function fetchAlbumTracks(albumId: number): Promise<PlayableTrack[]> {
+	const response = await apiFetch(`/library/albums/${albumId}`)
 	if (!response.ok) return []
 	const album = await response.json()
-	return ((album.tracks ?? []) as MusicTrack[])
-		.map((t) => ({ ...t, kind: 'music' as const }))
+	return ((album.tracks ?? []) as PlayableTrack[])
+		.map((t) => (t.kind === 'stream' ? t : { ...t, kind: 'music' as const }))
 		.sort(
 			(a: any, b: any) =>
 				(a.disc_number ?? 0) - (b.disc_number ?? 0) || (a.track_number ?? 0) - (b.track_number ?? 0)

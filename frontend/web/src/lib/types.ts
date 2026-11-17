@@ -21,6 +21,8 @@ export interface StreamTrack {
 	cover_art: string | null
 	lyrics: string | null
 	kind: 'stream'
+	album?: string | null
+	cached?: boolean
 }
 
 export type PlayableTrack = MusicTrack | StreamTrack

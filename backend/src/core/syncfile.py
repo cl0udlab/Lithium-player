@@ -13,6 +13,7 @@ from models import (
     Video,
     MusicTrack,
     Album,
+    SubsonicSong,
     FileModal,
     AnimeSeries,
     AnimeTag,
@@ -360,6 +361,8 @@ def sync_album_data(album_id: int, db: Session):
         .select_from(MusicTrack)
         .where(MusicTrack.album_id == album_id)
     ).first()
+    album.total_tracks += db.exec(select(func.count()).select_from(SubsonicSong)
+                                   .where(SubsonicSong.album_id == album_id)).one()
 
     db.add(album)
     db.commit()
@@ -413,6 +416,9 @@ def merge_split_albums() -> int:
                 for track in db.exec(
                     select(MusicTrack).where(MusicTrack.album_id == other_id)
                 ).all():
+                    track.album_id = target_id
+                    db.add(track)
+                for track in db.exec(select(SubsonicSong).where(SubsonicSong.album_id == other_id)).all():
                     track.album_id = target_id
                     db.add(track)
                 if other.album_artist != target.album_artist:

@@ -19,7 +19,7 @@
 	)
 	const playVideo = getContext<(video: Video) => void>('playVideo')
 
-	const musics: MusicTrack[] = $derived(data.info?.Musics ?? [])
+	const musics: PlayableTrack[] = $derived(data.info?.Musics ?? [])
 	const videos: Video[] = $derived(data.info?.Videos ?? [])
 	// 只在載入時洗牌一次, 不要每次重新渲染都換
 	const albums = $derived([...(data.info?.Albums ?? [])].sort(() => Math.random() - 0.5))
@@ -46,7 +46,7 @@
 		if (tracks.length) playMusiclist(tracks)
 	}
 
-	const music = (track: MusicTrack): PlayableTrack => ({ ...track, kind: 'music' })
+	const music = (track: PlayableTrack): PlayableTrack => track.kind === 'stream' ? track : ({ ...track, kind: 'music' })
 </script>
 
 <svelte:head>
@@ -117,7 +117,7 @@
 					<a href="/app/music" class="text-xs font-medium text-fg-muted hover:text-fg">查看全部</a>
 				</div>
 				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-					{#each musics.slice(0, 8) as track, i (track.id)}
+					{#each musics.slice(0, 8) as track, i (`${track.kind ?? 'music'}-${track.id}`)}
 						{@const cover = coverUrl(track.cover_art, 120)}
 						<button
 							class="group flex items-center gap-3 overflow-hidden rounded-lg bg-surface-2/60 pr-3 text-left transition-colors hover:bg-surface-3"
@@ -166,13 +166,13 @@
 		{#if streams.length > 0}
 			<Shelf title="網路音訊" itemClass="w-56 md:w-64">
 				{#snippet children(itemClass)}
-					{#each streams as track, i (track.id)}
+					{#each streams as track, i (`${track.kind ?? 'music'}-${track.id}`)}
 						<MediaCard
 							class={itemClass}
 							shape="video"
 							title={track.title}
 							subtitle={track.artist}
-							cover={track.cover_art}
+							cover={coverUrl(track.cover_art)}
 							badge={platformLabel[track.platform]}
 							onplay={() => playMusiclist(streams, i)}
 						/>
